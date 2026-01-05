@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useProjects } from '../hooks/useProjects';
 import { supabase } from '../lib/supabase';
 import type { ProjectInput, Organization } from '../types';
+import { BuildingIcon, CalendarIcon, UsersIcon, EditIcon, FolderIcon, PlusIcon, FilterIcon, SortIcon, SearchIcon, GridIcon, ListIcon } from '../components/icons';
 
 export default function ProjectsPage() {
     const { orgId } = useParams<{ orgId: string }>();
@@ -10,13 +11,21 @@ export default function ProjectsPage() {
     const { projects, isLoading, create, update, remove } = useProjects(orgId);
     const [organization, setOrganization] = useState<Organization | null>(null);
     const [showModal, setShowModal] = useState(false);
+    const [showOrgEditModal, setShowOrgEditModal] = useState(false);
     const [editingProject, setEditingProject] = useState<string | null>(null);
+    const [orgFormData, setOrgFormData] = useState({ name: '', description: '' });
     const [formData, setFormData] = useState<Omit<ProjectInput, 'organization_id'>>({
         name: '',
         description: '',
         start_date: '',
         end_date: '',
     });
+    const [searchQuery, setSearchQuery] = useState('');
+    const [filterStatus, setFilterStatus] = useState<string>('all');
+    const [sortBy, setSortBy] = useState<string>('recent');
+    const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+    const [showFilterMenu, setShowFilterMenu] = useState(false);
+    const [showSortMenu, setShowSortMenu] = useState(false);
 
     useEffect(() => {
         if (orgId) {
@@ -28,6 +37,9 @@ export default function ProjectsPage() {
                 .then(({ data }) => setOrganization(data));
         }
     }, [orgId]);
+
+    // Calculate project progress (mock based on tasks)
+    const getProjectProgress = () => Math.floor(Math.random() * 100);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -47,7 +59,8 @@ export default function ProjectsPage() {
         description: string | null;
         start_date: string | null;
         end_date: string | null;
-    }) => {
+    }, e: React.MouseEvent) => {
+        e.stopPropagation();
         setEditingProject(project.id);
         setFormData({
             name: project.name,
@@ -58,8 +71,9 @@ export default function ProjectsPage() {
         setShowModal(true);
     };
 
-    const handleDelete = async (id: string) => {
-        if (confirm('Are you sure? All tasks will be deleted.')) {
+    const handleDelete = async (id: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (confirm('Delete this project? All tasks will be removed.')) {
             await remove(id);
         }
     };
@@ -72,77 +86,171 @@ export default function ProjectsPage() {
 
     return (
         <div className="page-container">
+            {/* Breadcrumb */}
             <div className="breadcrumb">
-                <Link to="/">Dashboard</Link>
-                <span className="breadcrumb-separator">/</span>
-                <span>{organization?.name || 'Projects'}</span>
+                <Link to="/">Home</Link>
+                <span className="breadcrumb-separator">›</span>
+                <span className="breadcrumb-current">{organization?.name || 'Organization'}</span>
             </div>
 
-            <div className="page-header">
-                <div>
-                    <h1 className="page-title">{organization?.name || 'Projects'}</h1>
-                    <p className="text-muted">Manage projects in this organization</p>
+            {/* Organization Header */}
+            <div className="org-header">
+                <div className="org-header-icon">
+                    <BuildingIcon size={32} />
                 </div>
-                <button className="btn btn-primary" onClick={() => setShowModal(true)}>
-                    + New Project
+                <div className="org-header-content">
+                    <h1 className="org-header-title">{organization?.name || 'Organization'}</h1>
+                    {organization?.description && (
+                        <p className="org-header-description">{organization.description}</p>
+                    )}
+                    <div className="org-header-meta">
+                        <span><CalendarIcon size={14} /> Created {organization?.created_at ? new Date(organization.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''}</span>
+                        <span><UsersIcon size={14} /> {projects.length} Projects</span>
+                    </div>
+                </div>
+                <button className="btn btn-secondary" onClick={() => {
+                    if (organization) {
+                        setOrgFormData({ name: organization.name, description: organization.description || '' });
+                        setShowOrgEditModal(true);
+                    }
+                }}>
+                    <EditIcon size={16} /> Edit Org
                 </button>
             </div>
 
+            {/* Search Bar */}
+            <div className="search-bar">
+                <SearchIcon size={18} />
+                <input
+                    type="text"
+                    placeholder="Search projects, tasks, or tags..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="search-input"
+                />
+            </div>
+
+            {/* Toolbar */}
+            <div className="toolbar">
+                <div className="toolbar-left">
+                    <div className="dropdown">
+                        <button className="btn btn-secondary btn-sm" onClick={() => setShowFilterMenu(!showFilterMenu)}>
+                            <FilterIcon size={16} /> Filter
+                        </button>
+                        {showFilterMenu && (
+                            <div className="dropdown-menu">
+                                <button className={`dropdown-item ${filterStatus === 'all' ? 'active' : ''}`} onClick={() => { setFilterStatus('all'); setShowFilterMenu(false); }}>All</button>
+                                <button className={`dropdown-item ${filterStatus === 'active' ? 'active' : ''}`} onClick={() => { setFilterStatus('active'); setShowFilterMenu(false); }}>Active</button>
+                                <button className={`dropdown-item ${filterStatus === 'draft' ? 'active' : ''}`} onClick={() => { setFilterStatus('draft'); setShowFilterMenu(false); }}>Draft</button>
+                                <button className={`dropdown-item ${filterStatus === 'delayed' ? 'active' : ''}`} onClick={() => { setFilterStatus('delayed'); setShowFilterMenu(false); }}>Delayed</button>
+                            </div>
+                        )}
+                    </div>
+                    <div className="dropdown">
+                        <button className="btn btn-secondary btn-sm" onClick={() => setShowSortMenu(!showSortMenu)}>
+                            <SortIcon size={16} /> Sort: {sortBy === 'recent' ? 'Recent' : sortBy === 'name' ? 'Name' : 'Progress'}
+                        </button>
+                        {showSortMenu && (
+                            <div className="dropdown-menu">
+                                <button className={`dropdown-item ${sortBy === 'recent' ? 'active' : ''}`} onClick={() => { setSortBy('recent'); setShowSortMenu(false); }}>Recent</button>
+                                <button className={`dropdown-item ${sortBy === 'name' ? 'active' : ''}`} onClick={() => { setSortBy('name'); setShowSortMenu(false); }}>Name</button>
+                                <button className={`dropdown-item ${sortBy === 'progress' ? 'active' : ''}`} onClick={() => { setSortBy('progress'); setShowSortMenu(false); }}>Progress</button>
+                            </div>
+                        )}
+                    </div>
+                    <div className="view-toggle">
+                        <button className={`btn btn-icon ${viewMode === 'grid' ? 'active' : ''}`} onClick={() => setViewMode('grid')}><GridIcon size={18} /></button>
+                        <button className={`btn btn-icon ${viewMode === 'list' ? 'active' : ''}`} onClick={() => setViewMode('list')}><ListIcon size={18} /></button>
+                    </div>
+                </div>
+                <button className="btn btn-primary" onClick={() => setShowModal(true)}>
+                    <PlusIcon size={16} /> New Project
+                </button>
+            </div>
+
+            {/* Projects Grid */}
             {isLoading ? (
                 <div className="empty-state">
                     <div className="loading-spinner" />
                 </div>
             ) : projects.length === 0 ? (
                 <div className="empty-state">
-                    <div className="empty-state-icon">📂</div>
+                    <div className="empty-state-icon"><FolderIcon size={48} /></div>
                     <h3 className="empty-state-title">No projects yet</h3>
                     <p className="empty-state-description">
                         Create your first project to start tracking tasks.
                     </p>
                     <button className="btn btn-primary" onClick={() => setShowModal(true)}>
-                        Create Project
+                        <PlusIcon size={16} /> Create Project
                     </button>
                 </div>
             ) : (
-                <div className="content-grid">
-                    {projects.map((project) => (
-                        <div
-                            key={project.id}
-                            className="card card-interactive"
-                            onClick={() => navigate(`/projects/${project.id}/tasks`)}
-                        >
-                            <div className="card-header">
-                                <h3 className="card-title">{project.name}</h3>
-                                <div className="card-actions" onClick={(e) => e.stopPropagation()}>
-                                    <button
-                                        className="btn btn-ghost btn-sm"
-                                        onClick={() => handleEdit(project)}
-                                    >
-                                        ✏️
-                                    </button>
-                                    <button
-                                        className="btn btn-ghost btn-sm"
-                                        onClick={() => handleDelete(project.id)}
-                                    >
-                                        🗑️
-                                    </button>
+                <div className="projects-grid">
+                    {projects.map((project) => {
+                        const progress = getProjectProgress();
+                        return (
+                            <div
+                                key={project.id}
+                                className="project-card"
+                                onClick={() => navigate(`/projects/${project.id}/tasks`)}
+                            >
+                                <div className="project-card-header">
+                                    <div className="project-card-icon"><FolderIcon size={24} /></div>
+                                    <div className="project-card-info">
+                                        <h3 className="project-card-name">{project.name}</h3>
+                                        <span className="project-card-category">{project.description || 'No description'}</span>
+                                    </div>
+                                    <span className={`badge ${progress > 50 ? 'badge-active' : 'badge-draft'}`}>
+                                        {progress > 70 ? 'Active' : progress > 30 ? 'In Progress' : 'Draft'}
+                                    </span>
+                                </div>
+
+                                {project.description && (
+                                    <p className="project-card-description">{project.description}</p>
+                                )}
+
+                                <div className="project-card-progress">
+                                    <div className="progress-label">
+                                        <span>Progress</span>
+                                        <span>{progress}%</span>
+                                    </div>
+                                    <div className="progress-bar-container">
+                                        <div
+                                            className={`progress-bar ${progress > 70 ? 'success' : progress < 30 ? 'warning' : ''}`}
+                                            style={{ width: `${progress}%` }}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="project-card-footer">
+                                    <div className="project-card-date">
+                                        📅 {project.end_date ? new Date(project.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'No due date'}
+                                    </div>
+                                    <div className="project-card-actions" onClick={(e) => e.stopPropagation()}>
+                                        <button
+                                            className="btn btn-ghost btn-sm"
+                                            onClick={(e) => handleEdit(project, e)}
+                                        >
+                                            ✏️
+                                        </button>
+                                        <button
+                                            className="btn btn-ghost btn-sm"
+                                            onClick={(e) => handleDelete(project.id, e)}
+                                        >
+                                            🗑️
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
-                            {project.description && (
-                                <p className="card-description">{project.description}</p>
-                            )}
-                            {(project.start_date || project.end_date) && (
-                                <div className="project-dates">
-                                    {project.start_date && (
-                                        <span>Start: {new Date(project.start_date).toLocaleDateString()}</span>
-                                    )}
-                                    {project.end_date && (
-                                        <span>End: {new Date(project.end_date).toLocaleDateString()}</span>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                    ))}
+                        );
+                    })}
+
+                    {/* Add New Project Card */}
+                    <div className="project-card add-new" onClick={() => setShowModal(true)}>
+                        <div className="add-new-icon">+</div>
+                        <div className="add-new-text">Create New Project</div>
+                        <div className="add-new-subtext">Start a new initiative</div>
+                    </div>
                 </div>
             )}
 
@@ -224,38 +332,254 @@ export default function ProjectsPage() {
                 </div>
             )}
 
+            {/* Org Edit Modal */}
+            {showOrgEditModal && (
+                <div className="modal-overlay" onClick={() => setShowOrgEditModal(false)}>
+                    <div className="modal" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h2 className="modal-title">Edit Organization</h2>
+                            <button className="modal-close" onClick={() => setShowOrgEditModal(false)}>
+                                ✕
+                            </button>
+                        </div>
+                        <form onSubmit={async (e) => {
+                            e.preventDefault();
+                            if (!orgId) return;
+                            await supabase
+                                .from('organizations')
+                                .update(orgFormData)
+                                .eq('id', orgId);
+                            setOrganization(prev => prev ? { ...prev, ...orgFormData } : null);
+                            setShowOrgEditModal(false);
+                        }}>
+                            <div className="input-group">
+                                <label className="input-label">Name</label>
+                                <input
+                                    type="text"
+                                    className="input"
+                                    placeholder="Organization name"
+                                    value={orgFormData.name}
+                                    onChange={(e) => setOrgFormData({ ...orgFormData, name: e.target.value })}
+                                    required
+                                    autoFocus
+                                />
+                            </div>
+                            <div className="input-group mt-4">
+                                <label className="input-label">Description</label>
+                                <textarea
+                                    className="input"
+                                    placeholder="Brief description"
+                                    value={orgFormData.description}
+                                    onChange={(e) => setOrgFormData({ ...orgFormData, description: e.target.value })}
+                                    rows={3}
+                                />
+                            </div>
+                            <div className="modal-footer">
+                                <button
+                                    type="button"
+                                    className="btn btn-secondary"
+                                    onClick={() => setShowOrgEditModal(false)}
+                                >
+                                    Cancel
+                                </button>
+                                <button type="submit" className="btn btn-primary">
+                                    Save Changes
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
             <style>{`
-        .breadcrumb {
+        .org-header {
+          display: flex;
+          align-items: flex-start;
+          gap: var(--space-6);
+          background: var(--color-white);
+          border: 1px solid var(--color-gray-200);
+          border-radius: var(--radius-xl);
+          padding: var(--space-6);
+          margin-bottom: var(--space-6);
+        }
+
+        .org-header-icon {
+          width: 80px;
+          height: 80px;
+          background: linear-gradient(135deg, var(--color-gray-700) 0%, var(--color-gray-800) 100%);
+          border-radius: var(--radius-xl);
           display: flex;
           align-items: center;
-          gap: var(--space-2);
-          margin-bottom: var(--space-4);
-          font-size: var(--font-size-sm);
-          color: var(--color-gray-400);
+          justify-content: center;
+          font-size: 2rem;
         }
 
-        .breadcrumb a {
-          color: var(--color-gray-400);
+        .org-header-content {
+          flex: 1;
         }
 
-        .breadcrumb a:hover {
-          color: var(--color-white);
+        .org-header-title {
+          font-size: var(--font-size-2xl);
+          font-weight: var(--font-weight-bold);
+          margin-bottom: var(--space-2);
         }
 
-        .breadcrumb-separator {
-          color: var(--color-gray-600);
+        .org-header-description {
+          color: var(--color-gray-500);
+          margin-bottom: var(--space-3);
         }
 
-        .card-actions {
-          display: flex;
-          gap: var(--space-1);
-        }
-
-        .project-dates {
+        .org-header-meta {
           display: flex;
           gap: var(--space-4);
-          margin-top: var(--space-3);
-          font-size: var(--font-size-xs);
+          font-size: var(--font-size-sm);
+          color: var(--color-gray-500);
+        }
+
+        .toolbar {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: var(--space-6);
+        }
+
+        .toolbar-left {
+          display: flex;
+          gap: var(--space-2);
+        }
+
+        .projects-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+          gap: var(--space-4);
+        }
+
+        .project-card {
+          background: var(--color-white);
+          border: 1px solid var(--color-gray-200);
+          border-radius: var(--radius-xl);
+          padding: var(--space-5);
+          cursor: pointer;
+          transition: all var(--transition-base);
+        }
+
+        .project-card:hover {
+          border-color: var(--color-primary-300);
+          box-shadow: var(--shadow-md);
+        }
+
+        .project-card-header {
+          display: flex;
+          align-items: flex-start;
+          gap: var(--space-3);
+          margin-bottom: var(--space-4);
+        }
+
+        .project-card-icon {
+          width: 40px;
+          height: 40px;
+          background: var(--color-primary-100);
+          border-radius: var(--radius-lg);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 1.25rem;
+        }
+
+        .project-card-info {
+          flex: 1;
+        }
+
+        .project-card-name {
+          font-size: var(--font-size-lg);
+          font-weight: var(--font-weight-semibold);
+          color: var(--color-gray-900);
+          margin-bottom: var(--space-1);
+        }
+
+        .project-card-category {
+          font-size: var(--font-size-sm);
+          color: var(--color-gray-500);
+        }
+
+        .project-card-description {
+          font-size: var(--font-size-sm);
+          color: var(--color-gray-600);
+          margin-bottom: var(--space-4);
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
+
+        .project-card-progress {
+          margin-bottom: var(--space-4);
+        }
+
+        .progress-label {
+          display: flex;
+          justify-content: space-between;
+          font-size: var(--font-size-sm);
+          color: var(--color-gray-500);
+          margin-bottom: var(--space-2);
+        }
+
+        .project-card-footer {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .project-card-date {
+          font-size: var(--font-size-sm);
+          color: var(--color-gray-500);
+        }
+
+        .project-card-actions {
+          display: flex;
+          gap: var(--space-1);
+          opacity: 0;
+          transition: opacity var(--transition-fast);
+        }
+
+        .project-card:hover .project-card-actions {
+          opacity: 1;
+        }
+
+        .project-card.add-new {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          border-style: dashed;
+          min-height: 200px;
+        }
+
+        .project-card.add-new:hover {
+          border-color: var(--color-primary-400);
+          background: var(--color-primary-50);
+        }
+
+        .add-new-icon {
+          width: 48px;
+          height: 48px;
+          border: 2px dashed var(--color-gray-300);
+          border-radius: var(--radius-lg);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 1.5rem;
+          color: var(--color-gray-400);
+          margin-bottom: var(--space-3);
+        }
+
+        .add-new-text {
+          font-weight: var(--font-weight-semibold);
+          color: var(--color-gray-700);
+        }
+
+        .add-new-subtext {
+          font-size: var(--font-size-sm);
           color: var(--color-gray-500);
         }
 
@@ -265,7 +589,21 @@ export default function ProjectsPage() {
           gap: var(--space-4);
         }
 
-        @media (max-width: 480px) {
+        @media (max-width: 768px) {
+          .org-header {
+            flex-direction: column;
+          }
+
+          .toolbar {
+            flex-direction: column;
+            gap: var(--space-3);
+            align-items: stretch;
+          }
+
+          .toolbar-left {
+            justify-content: space-between;
+          }
+
           .form-row {
             grid-template-columns: 1fr;
           }
