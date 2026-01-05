@@ -14,8 +14,8 @@ interface AuthContextType {
     session: Session | null;
     isLoading: boolean;
     isAuthenticated: boolean;
-    signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-    signUp: (email: string, password: string) => Promise<{ error: Error | null }>;
+    signIn: (login: string, password: string) => Promise<{ error: Error | null }>;
+    signUp: (email: string, password: string, username?: string) => Promise<{ error: Error | null }>;
     signOut: () => Promise<void>;
 }
 
@@ -50,8 +50,25 @@ export function AuthProvider({ children }: AuthProviderProps) {
         return () => subscription.unsubscribe();
     }, []);
 
-    const signIn = useCallback(async (email: string, password: string) => {
+    const signIn = useCallback(async (login: string, password: string) => {
         try {
+            let email = login;
+
+            // Check if input looks like an email
+            if (!login.includes('@')) {
+                // Determine if it is a username
+                const { data, error } = await supabase
+                    .from('users')
+                    .select('email')
+                    .eq('username', login)
+                    .single();
+
+                if (error || !data) {
+                    return { error: new Error('Username not found') };
+                }
+                email = data.email;
+            }
+
             const { error } = await supabase.auth.signInWithPassword({
                 email,
                 password,
@@ -62,11 +79,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
     }, []);
 
-    const signUp = useCallback(async (email: string, password: string) => {
+    const signUp = useCallback(async (email: string, password: string, username?: string) => {
         try {
             const { error } = await supabase.auth.signUp({
                 email,
                 password,
+                options: {
+                    data: {
+                        username,
+                    },
+                },
             });
             return { error: error ? new Error(error.message) : null };
         } catch (err) {

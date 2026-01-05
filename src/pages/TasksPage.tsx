@@ -4,17 +4,18 @@ import { useTasks } from '../hooks/useTasks';
 import { useTimeLogs, formatDuration } from '../hooks/useTimeLogs';
 import { supabase } from '../lib/supabase';
 import type { Task, TaskInput, TaskStatus, TaskPriority, Project, Organization } from '../types';
+import { BuildingIcon, EditIcon, ShareIcon, SearchIcon, ListIcon, KanbanIcon, FilterIcon, SortIcon, PlusIcon, FlagIcon, CheckCircleIcon, CalendarIcon, ClockIcon, TrashIcon, CloseIcon } from '../components/icons';
 
 export default function TasksPage() {
     const { projectId } = useParams<{ projectId: string }>();
     const { tasks, isLoading, create, update, updateStatus, remove } = useTasks(projectId);
     const [project, setProject] = useState<Project | null>(null);
-    const [organization, setOrganization] = useState<Organization | null>(null);
+    const [_organization, setOrganization] = useState<Organization | null>(null);
     const [showModal, setShowModal] = useState(false);
     const [showTimeModal, setShowTimeModal] = useState(false);
     const [selectedTask, setSelectedTask] = useState<Task | null>(null);
     const [editingTask, setEditingTask] = useState<string | null>(null);
-    const [filter, setFilter] = useState<TaskStatus | 'all'>('all');
+    const [searchQuery, setSearchQuery] = useState('');
     const [formData, setFormData] = useState<Omit<TaskInput, 'project_id'>>({
         title: '',
         description: '',
@@ -22,6 +23,12 @@ export default function TasksPage() {
         priority: 'medium',
         due_date: '',
     });
+    const [viewMode, setViewMode] = useState<'list' | 'board'>('list');
+    const [filterStatus, setFilterStatus] = useState<string>('all');
+    const [sortBy, setSortBy] = useState<string>('date');
+    const [showFilterMenu, setShowFilterMenu] = useState(false);
+    const [showSortMenu, setShowSortMenu] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
 
     useEffect(() => {
         if (projectId) {
@@ -39,8 +46,12 @@ export default function TasksPage() {
         }
     }, [projectId]);
 
-    const filteredTasks =
-        filter === 'all' ? tasks : tasks.filter((t) => t.status === filter);
+    const completedCount = tasks.filter((t) => t.status === 'done').length;
+    const progress = tasks.length > 0 ? Math.round((completedCount / tasks.length) * 100) : 0;
+
+    const filteredTasks = tasks.filter((t) =>
+        t.title.toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -89,82 +100,237 @@ export default function TasksPage() {
         setShowTimeModal(true);
     };
 
+    const getStatusBadgeClass = (status: TaskStatus) => {
+        switch (status) {
+            case 'todo': return 'badge-todo';
+            case 'in_progress': return 'badge-in-progress';
+            case 'done': return 'badge-done';
+            default: return '';
+        }
+    };
+
+    const getPriorityIcon = (priority: TaskPriority) => {
+        const colors: Record<string, string> = {
+            high: 'var(--color-error)',
+            medium: 'var(--color-warning)',
+            low: 'var(--color-success)'
+        };
+        return <FlagIcon size={14} style={{ color: colors[priority] || 'var(--color-gray-400)' }} />;
+    };
+
+    const handleShare = () => {
+        const url = window.location.href;
+        navigator.clipboard.writeText(url);
+        alert('Project link copied to clipboard!');
+    };
+
+    const handleEditDetails = () => {
+        setShowEditModal(true);
+    };
+
     return (
         <div className="page-container">
+            {/* Breadcrumb */}
             <div className="breadcrumb">
-                <Link to="/">Dashboard</Link>
+                <BuildingIcon size={16} />
+                <Link to="/">Organization</Link>
                 <span className="breadcrumb-separator">/</span>
-                <Link to={`/organizations/${organization?.id}/projects`}>
-                    {organization?.name || 'Org'}
-                </Link>
-                <span className="breadcrumb-separator">/</span>
-                <span>{project?.name || 'Tasks'}</span>
+                <span className="breadcrumb-current">{project?.name || 'Project'}</span>
             </div>
 
-            <div className="page-header">
-                <div>
-                    <h1 className="page-title">{project?.name || 'Tasks'}</h1>
-                    <p className="text-muted">
-                        {tasks.filter((t) => t.status === 'done').length} of {tasks.length} completed
-                    </p>
+            {/* Project Header */}
+            <div className="project-header">
+                <div className="project-header-content">
+                    <h1 className="project-header-title">{project?.name || 'Project'}</h1>
+                    {project?.description && (
+                        <p className="project-header-description">{project.description}</p>
+                    )}
                 </div>
-                <button className="btn btn-primary" onClick={() => setShowModal(true)}>
-                    + New Task
-                </button>
+                <div className="project-header-actions">
+                    <button className="btn btn-secondary" onClick={handleEditDetails}><EditIcon size={16} /> Edit Details</button>
+                    <button className="btn btn-secondary" onClick={handleShare}><ShareIcon size={16} /> Share</button>
+                </div>
             </div>
 
-            {/* Filter tabs */}
-            <div className="filter-tabs">
-                {(['all', 'todo', 'in_progress', 'done'] as const).map((status) => (
-                    <button
-                        key={status}
-                        className={`filter-tab ${filter === status ? 'active' : ''}`}
-                        onClick={() => setFilter(status)}
-                    >
-                        {status === 'all'
-                            ? 'All'
-                            : status === 'todo'
-                                ? 'To Do'
-                                : status === 'in_progress'
-                                    ? 'In Progress'
-                                    : 'Done'}
+            {/* Progress Bar */}
+            <div className="project-progress">
+                <div className="progress-header">
+                    <span>Project Progress</span>
+                    <span className="progress-value">{progress}%</span>
+                </div>
+                <div className="progress-bar-container">
+                    <div className="progress-bar" style={{ width: `${progress}%` }} />
+                </div>
+            </div>
+
+            {/* Toolbar */}
+            <div className="tasks-toolbar">
+                <div className="search-box">
+                    <SearchIcon size={18} className="search-icon" />
+                    <input
+                        type="text"
+                        className="search-input"
+                        placeholder="Search tasks..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                </div>
+                <div className="toolbar-actions">
+                    <div className="view-toggle">
+                        <button className={`btn btn-icon ${viewMode === 'list' ? 'active' : ''}`} onClick={() => setViewMode('list')}><ListIcon size={18} /></button>
+                        <button className={`btn btn-icon ${viewMode === 'board' ? 'active' : ''}`} onClick={() => setViewMode('board')}><KanbanIcon size={18} /></button>
+                    </div>
+                    <div className="dropdown">
+                        <button className="btn btn-secondary btn-sm" onClick={() => setShowFilterMenu(!showFilterMenu)}>
+                            <FilterIcon size={16} /> Filter
+                        </button>
+                        {showFilterMenu && (
+                            <div className="dropdown-menu">
+                                <button className={`dropdown-item ${filterStatus === 'all' ? 'active' : ''}`} onClick={() => { setFilterStatus('all'); setShowFilterMenu(false); }}>All</button>
+                                <button className={`dropdown-item ${filterStatus === 'todo' ? 'active' : ''}`} onClick={() => { setFilterStatus('todo'); setShowFilterMenu(false); }}>To Do</button>
+                                <button className={`dropdown-item ${filterStatus === 'in_progress' ? 'active' : ''}`} onClick={() => { setFilterStatus('in_progress'); setShowFilterMenu(false); }}>In Progress</button>
+                                <button className={`dropdown-item ${filterStatus === 'done' ? 'active' : ''}`} onClick={() => { setFilterStatus('done'); setShowFilterMenu(false); }}>Done</button>
+                            </div>
+                        )}
+                    </div>
+                    <div className="dropdown">
+                        <button className="btn btn-secondary btn-sm" onClick={() => setShowSortMenu(!showSortMenu)}>
+                            <SortIcon size={16} /> Sort
+                        </button>
+                        {showSortMenu && (
+                            <div className="dropdown-menu">
+                                <button className={`dropdown-item ${sortBy === 'date' ? 'active' : ''}`} onClick={() => { setSortBy('date'); setShowSortMenu(false); }}>Date</button>
+                                <button className={`dropdown-item ${sortBy === 'priority' ? 'active' : ''}`} onClick={() => { setSortBy('priority'); setShowSortMenu(false); }}>Priority</button>
+                                <button className={`dropdown-item ${sortBy === 'name' ? 'active' : ''}`} onClick={() => { setSortBy('name'); setShowSortMenu(false); }}>Name</button>
+                            </div>
+                        )}
+                    </div>
+                    <button className="btn btn-primary" onClick={() => setShowModal(true)}>
+                        <PlusIcon size={16} /> New Task
                     </button>
-                ))}
+                </div>
             </div>
 
+            {/* Tasks Table */}
             {isLoading ? (
                 <div className="empty-state">
                     <div className="loading-spinner" />
                 </div>
             ) : filteredTasks.length === 0 ? (
                 <div className="empty-state">
-                    <div className="empty-state-icon">✅</div>
+                    <div className="empty-state-icon"><CheckCircleIcon size={48} /></div>
                     <h3 className="empty-state-title">
-                        {filter === 'all' ? 'No tasks yet' : 'No tasks in this status'}
+                        {searchQuery ? 'No tasks found' : 'No tasks yet'}
                     </h3>
                     <p className="empty-state-description">
-                        {filter === 'all'
-                            ? 'Create your first task to get started.'
-                            : 'Try selecting a different filter.'}
+                        {searchQuery
+                            ? 'Try a different search term.'
+                            : 'Create your first task to get started.'}
                     </p>
-                    {filter === 'all' && (
+                    {!searchQuery && (
                         <button className="btn btn-primary" onClick={() => setShowModal(true)}>
-                            Create Task
+                            <PlusIcon size={16} /> Create Task
                         </button>
                     )}
                 </div>
             ) : (
-                <div className="task-list">
-                    {filteredTasks.map((task) => (
-                        <TaskCard
-                            key={task.id}
-                            task={task}
-                            onStatusChange={updateStatus}
-                            onEdit={handleEdit}
-                            onDelete={handleDelete}
-                            onTimeLog={handleOpenTimeLog}
-                        />
-                    ))}
+                <div className="table-container">
+                    <table className="table">
+                        <thead>
+                            <tr>
+                                <th style={{ width: '40px' }}></th>
+                                <th>Task Name</th>
+                                <th style={{ width: '120px' }}>Status</th>
+                                <th style={{ width: '100px' }}>Priority</th>
+                                <th style={{ width: '120px' }}>Labels</th>
+                                <th style={{ width: '140px' }}>Due Date</th>
+                                <th style={{ width: '80px' }}></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {filteredTasks.map((task) => (
+                                <tr key={task.id}>
+                                    <td>
+                                        <input
+                                            type="checkbox"
+                                            checked={task.status === 'done'}
+                                            onChange={(e) =>
+                                                updateStatus(task.id, e.target.checked ? 'done' : 'todo')
+                                            }
+                                            className="task-checkbox"
+                                        />
+                                    </td>
+                                    <td>
+                                        <span className={`task-row-title ${task.status === 'done' ? 'completed' : ''}`}>
+                                            {task.title}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span className={`badge ${getStatusBadgeClass(task.status)}`}>
+                                            {task.status === 'todo'
+                                                ? 'To Do'
+                                                : task.status === 'in_progress'
+                                                    ? 'In Progress'
+                                                    : 'Done'}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span className={`priority-indicator priority-${task.priority}`}>
+                                            {getPriorityIcon(task.priority)} {task.priority}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {task.labels?.slice(0, 2).map((label, i) => (
+                                            <span key={i} className="label-badge">#{label}</span>
+                                        ))}
+                                    </td>
+                                    <td>
+                                        {task.due_date && (
+                                            <span className="due-date">
+                                                <CalendarIcon size={14} /> {new Date(task.due_date).toLocaleDateString('en-US', {
+                                                    month: 'short',
+                                                    day: 'numeric',
+                                                    year: 'numeric',
+                                                })}
+                                            </span>
+                                        )}
+                                    </td>
+                                    <td>
+                                        <div className="row-actions">
+                                            <button
+                                                className="btn btn-ghost btn-sm"
+                                                onClick={() => handleOpenTimeLog(task)}
+                                                title="Log time"
+                                            >
+                                                <ClockIcon size={16} />
+                                            </button>
+                                            <button
+                                                className="btn btn-ghost btn-sm"
+                                                onClick={() => handleEdit(task)}
+                                                title="Edit"
+                                            >
+                                                <EditIcon size={16} />
+                                            </button>
+                                            <button
+                                                className="btn btn-ghost btn-sm"
+                                                onClick={() => handleDelete(task.id)}
+                                                title="Delete"
+                                            >
+                                                <TrashIcon size={16} />
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                    <div className="table-footer">
+                        <span>Showing {filteredTasks.length} of {tasks.length} tasks</span>
+                        <div className="pagination">
+                            <button className="btn btn-secondary btn-sm" disabled>Previous</button>
+                            <button className="btn btn-secondary btn-sm" disabled>Next</button>
+                        </div>
+                    </div>
                 </div>
             )}
 
@@ -177,7 +343,7 @@ export default function TasksPage() {
                                 {editingTask ? 'Edit Task' : 'New Task'}
                             </h2>
                             <button className="modal-close" onClick={handleCloseModal}>
-                                ✕
+                                <CloseIcon size={20} />
                             </button>
                         </div>
                         <form onSubmit={handleSubmit}>
@@ -263,6 +429,51 @@ export default function TasksPage() {
                 </div>
             )}
 
+            {/* Edit Project Modal */}
+            {showEditModal && (
+                <div className="modal-overlay" onClick={() => setShowEditModal(false)}>
+                    <div className="modal" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h2 className="modal-title">Edit Project Details</h2>
+                            <button className="modal-close" onClick={() => setShowEditModal(false)}>
+                                <CloseIcon size={20} />
+                            </button>
+                        </div>
+                        <form onSubmit={(e) => { e.preventDefault(); setShowEditModal(false); }}>
+                            <div className="input-group">
+                                <label className="input-label">Project Name</label>
+                                <input
+                                    type="text"
+                                    className="input"
+                                    defaultValue={project?.name}
+                                    autoFocus
+                                />
+                            </div>
+                            <div className="input-group mt-4">
+                                <label className="input-label">Description</label>
+                                <textarea
+                                    className="input"
+                                    defaultValue={project?.description || ''}
+                                    rows={3}
+                                />
+                            </div>
+                            <div className="modal-footer">
+                                <button
+                                    type="button"
+                                    className="btn btn-secondary"
+                                    onClick={() => setShowEditModal(false)}
+                                >
+                                    Cancel
+                                </button>
+                                <button type="submit" className="btn btn-primary">
+                                    Save Changes
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
             {/* Time Log Modal */}
             {showTimeModal && selectedTask && (
                 <TimeLogModal
@@ -275,61 +486,287 @@ export default function TasksPage() {
             )}
 
             <style>{`
+        .dropdown {
+          position: relative;
+        }
+
+        .dropdown-menu {
+          position: absolute;
+          top: 100%;
+          left: 0;
+          margin-top: var(--space-2);
+          background: var(--color-white);
+          border: 1px solid var(--color-gray-200);
+          border-radius: var(--radius-md);
+          box-shadow: var(--shadow-lg);
+          min-width: 160px;
+          z-index: 50;
+          padding: var(--space-1);
+        }
+
+        .dropdown-item {
+          display: block;
+          width: 100%;
+          text-align: left;
+          padding: var(--space-2) var(--space-3);
+          font-size: var(--font-size-sm);
+          color: var(--color-gray-700);
+          background: none;
+          border: none;
+          cursor: pointer;
+          border-radius: var(--radius-sm);
+        }
+
+        .dropdown-item:hover {
+          background: var(--color-gray-50);
+        }
+
+        .dropdown-item.active {
+          color: var(--color-primary-600);
+          background: var(--color-primary-50);
+          font-weight: var(--font-weight-medium);
+        }
+
+        .view-toggle {
+          display: flex;
+          background: var(--color-gray-100);
+          padding: 2px;
+          border-radius: var(--radius-md);
+        }
+
+        .btn-icon {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 32px;
+          height: 32px;
+          border: none;
+          background: none;
+          color: var(--color-gray-500);
+          border-radius: var(--radius-md);
+          cursor: pointer;
+        }
+
+        .btn-icon:hover {
+          color: var(--color-gray-700);
+        }
+
+        .btn-icon.active {
+          background: var(--color-white);
+          color: var(--color-primary-600);
+          box-shadow: var(--shadow-sm);
+        }
+
         .breadcrumb {
           display: flex;
           align-items: center;
           gap: var(--space-2);
-          margin-bottom: var(--space-4);
           font-size: var(--font-size-sm);
-          color: var(--color-gray-400);
-          flex-wrap: wrap;
+          color: var(--color-gray-500);
+          margin-bottom: var(--space-4);
         }
 
         .breadcrumb a {
-          color: var(--color-gray-400);
+          color: inherit;
+          text-decoration: none;
         }
 
         .breadcrumb a:hover {
-          color: var(--color-white);
+          color: var(--color-primary-500);
         }
 
-        .breadcrumb-separator {
+        .project-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          margin-bottom: var(--space-6);
+        }
+
+        .project-header-title {
+          font-size: var(--font-size-3xl);
+          font-weight: var(--font-weight-bold);
+          color: var(--color-gray-900);
+          margin-bottom: var(--space-1);
+        }
+
+        .project-header-description {
+          color: var(--color-gray-500);
+        }
+
+        .project-header-actions {
+          display: flex;
+          gap: var(--space-3);
+        }
+
+
+
+        .project-progress {
+          margin-bottom: var(--space-8);
+        }
+
+        .progress-header {
+          display: flex;
+          justify-content: space-between;
+          margin-bottom: var(--space-2);
+          font-size: var(--font-size-sm);
           color: var(--color-gray-600);
         }
 
-        .filter-tabs {
+        .progress-header {
           display: flex;
-          gap: var(--space-2);
+          justify-content: space-between;
+          margin-bottom: var(--space-2);
+          font-size: var(--font-size-sm);
+          font-weight: var(--font-weight-medium);
+          color: var(--color-gray-700);
+        }
+
+        .progress-value {
+          color: var(--color-primary-500);
+          font-weight: var(--font-weight-semibold);
+        }
+
+        .progress-bar-container {
+          height: 8px;
+          background: var(--color-gray-100);
+          border-radius: 4px;
+          overflow: hidden;
+        }
+
+        .progress-bar {
+          height: 100%;
+          background: var(--color-primary-500);
+          border-radius: 4px;
+          transition: width 0.5s ease-out;
+        }
+
+        .tasks-toolbar {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
           margin-bottom: var(--space-6);
+          gap: var(--space-4);
           flex-wrap: wrap;
         }
 
-        .filter-tab {
-          padding: var(--space-2) var(--space-4);
-          background: transparent;
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          border-radius: var(--radius-full);
+        .search-box {
+          position: relative;
+          width: 300px;
+        }
+
+        .search-box {
+          position: relative;
+          width: 300px;
+        }
+
+        .search-icon {
+          position: absolute;
+          left: var(--space-3);
+          top: 50%;
+          transform: translateY(-50%);
+        }
+
+        .search-icon {
+          position: absolute;
+          left: var(--space-3);
+          top: 50%;
+          transform: translateY(-50%);
           color: var(--color-gray-400);
-          cursor: pointer;
-          transition: all var(--transition-fast);
+        }
+
+        .search-input {
+          width: 100%;
+          padding: var(--space-3) var(--space-4);
+          padding-left: 40px;
+          border: 1px solid var(--color-gray-200);
+          border-radius: var(--radius-lg);
           font-size: var(--font-size-sm);
+          background: var(--color-white);
         }
 
-        .filter-tab:hover {
-          border-color: rgba(255, 255, 255, 0.2);
-          color: var(--color-white);
+        .search-input:focus {
+          outline: none;
+          border-color: var(--color-primary-500);
+          box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
         }
 
-        .filter-tab.active {
-          background: linear-gradient(135deg, var(--color-primary-600), var(--color-secondary-600));
-          border-color: transparent;
-          color: var(--color-white);
-        }
-
-        .task-list {
+        .toolbar-actions {
           display: flex;
-          flex-direction: column;
-          gap: var(--space-4);
+          gap: var(--space-2);
+        }
+
+        .toolbar-actions {
+          display: flex;
+          gap: var(--space-2);
+          align-items: center;
+        }
+
+        .task-checkbox {
+          width: 18px;
+          height: 18px;
+          accent-color: var(--color-primary-500);
+          cursor: pointer;
+        }
+
+        .priority-indicator {
+          display: flex;
+          align-items: center;
+          gap: var(--space-1);
+          font-size: var(--font-size-sm);
+          text-transform: capitalize;
+        }
+
+        .priority-indicator.priority-high {
+          color: var(--color-error);
+        }
+
+        .priority-indicator.priority-medium {
+          color: var(--color-warning);
+        }
+
+        .priority-indicator.priority-low {
+          color: var(--color-gray-500);
+        }
+
+
+
+        .due-date {
+          font-size: var(--font-size-sm);
+          color: var(--color-gray-600);
+        }
+
+        .due-date {
+          display: flex;
+          align-items: center;
+          gap: var(--space-2);
+          font-size: var(--font-size-sm);
+          color: var(--color-gray-600);
+        }
+
+        .row-actions {
+          display: flex;
+          gap: var(--space-1);
+          opacity: 0;
+          transition: opacity var(--transition-fast);
+        }
+
+        tr:hover .row-actions {
+          opacity: 1;
+        }
+
+        .table-footer {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: var(--space-4);
+          font-size: var(--font-size-sm);
+          color: var(--color-gray-500);
+          border-top: 1px solid var(--color-gray-100);
+        }
+
+        .pagination {
+          display: flex;
+          gap: var(--space-2);
         }
 
         .form-row {
@@ -338,168 +775,36 @@ export default function TasksPage() {
           gap: var(--space-4);
         }
 
-        @media (max-width: 480px) {
+        @media (max-width: 768px) {
+          .project-header {
+            flex-direction: column;
+            gap: var(--space-4);
+          }
+
+          .tasks-toolbar {
+            flex-direction: column;
+          }
+
+          .tasks-toolbar {
+
+            flex-direction: column;
+          }
+
+          .search-box {
+            max-width: none;
+          }
+
+          .search-box {
+            max-width: none;
+          }
+
+          .toolbar-actions {
+            flex-wrap: wrap;
+            justify-content: center;
+          }
+
           .form-row {
             grid-template-columns: 1fr;
-          }
-        }
-      `}</style>
-        </div>
-    );
-}
-
-// Task Card Component
-function TaskCard({
-    task,
-    onStatusChange,
-    onEdit,
-    onDelete,
-    onTimeLog,
-}: {
-    task: Task;
-    onStatusChange: (id: string, status: TaskStatus) => void;
-    onEdit: (task: Task) => void;
-    onDelete: (id: string) => void;
-    onTimeLog: (task: Task) => void;
-}) {
-    const isDueSoon =
-        task.due_date &&
-        new Date(task.due_date) <= new Date(Date.now() + 24 * 60 * 60 * 1000) &&
-        task.status !== 'done';
-
-    return (
-        <div className={`task-card ${task.status === 'done' ? 'completed' : ''}`}>
-            <div className="task-checkbox">
-                <input
-                    type="checkbox"
-                    checked={task.status === 'done'}
-                    onChange={(e) =>
-                        onStatusChange(task.id, e.target.checked ? 'done' : 'todo')
-                    }
-                />
-            </div>
-            <div className="task-content">
-                <div className="task-header">
-                    <h4 className="task-title">{task.title}</h4>
-                    <div className="task-badges">
-                        <span className={`badge badge-${task.status.replace('_', '-')}`}>
-                            {task.status === 'todo'
-                                ? 'To Do'
-                                : task.status === 'in_progress'
-                                    ? 'In Progress'
-                                    : 'Done'}
-                        </span>
-                        <span className={`badge badge-${task.priority}`}>{task.priority}</span>
-                    </div>
-                </div>
-                {task.description && <p className="task-description">{task.description}</p>}
-                <div className="task-meta">
-                    {task.due_date && (
-                        <span className={`task-due ${isDueSoon ? 'due-soon' : ''}`}>
-                            📅 {new Date(task.due_date).toLocaleDateString()}
-                        </span>
-                    )}
-                </div>
-            </div>
-            <div className="task-actions">
-                <button className="btn btn-ghost btn-sm" onClick={() => onTimeLog(task)}>
-                    ⏱️
-                </button>
-                <button className="btn btn-ghost btn-sm" onClick={() => onEdit(task)}>
-                    ✏️
-                </button>
-                <button className="btn btn-ghost btn-sm" onClick={() => onDelete(task.id)}>
-                    🗑️
-                </button>
-            </div>
-
-            <style>{`
-        .task-card {
-          display: flex;
-          align-items: flex-start;
-          gap: var(--space-4);
-          padding: var(--space-5);
-          background: var(--bg-card);
-          border: 1px solid rgba(255, 255, 255, 0.08);
-          border-radius: var(--radius-xl);
-          transition: all var(--transition-base);
-        }
-
-        .task-card:hover {
-          background: var(--bg-card-hover);
-        }
-
-        .task-card.completed {
-          opacity: 0.6;
-        }
-
-        .task-card.completed .task-title {
-          text-decoration: line-through;
-        }
-
-        .task-checkbox input {
-          width: 20px;
-          height: 20px;
-          cursor: pointer;
-          accent-color: var(--color-primary-500);
-        }
-
-        .task-content {
-          flex: 1;
-          min-width: 0;
-        }
-
-        .task-header {
-          display: flex;
-          align-items: flex-start;
-          justify-content: space-between;
-          gap: var(--space-3);
-          flex-wrap: wrap;
-        }
-
-        .task-title {
-          font-size: var(--font-size-base);
-          font-weight: var(--font-weight-medium);
-          color: var(--color-white);
-          margin: 0;
-        }
-
-        .task-badges {
-          display: flex;
-          gap: var(--space-2);
-          flex-wrap: wrap;
-        }
-
-        .task-description {
-          margin-top: var(--space-2);
-          font-size: var(--font-size-sm);
-          color: var(--color-gray-400);
-        }
-
-        .task-meta {
-          margin-top: var(--space-3);
-          font-size: var(--font-size-xs);
-          color: var(--color-gray-500);
-        }
-
-        .task-due.due-soon {
-          color: var(--color-warning);
-        }
-
-        .task-actions {
-          display: flex;
-          gap: var(--space-1);
-        }
-
-        @media (max-width: 640px) {
-          .task-card {
-            flex-wrap: wrap;
-          }
-
-          .task-actions {
-            width: 100%;
-            justify-content: flex-end;
-            margin-top: var(--space-2);
           }
         }
       `}</style>
@@ -532,159 +837,145 @@ function TimeLogModal({ task, onClose }: { task: Task; onClose: () => void }) {
 
     return (
         <div className="modal-overlay" onClick={onClose}>
-            <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal" style={{ maxWidth: '600px' }} onClick={(e) => e.stopPropagation()}>
                 <div className="modal-header">
-                    <h2 className="modal-title">Time Log: {task.title}</h2>
+                    <h2 className="modal-title">Time Logs</h2>
                     <button className="modal-close" onClick={onClose}>
-                        ✕
+                        <CloseIcon size={20} />
                     </button>
                 </div>
 
-                <div className="time-total">
-                    <span className="time-total-label">Total Time</span>
-                    <span className="time-total-value">{formatDuration(totalMinutes)}</span>
+                <div className="time-header">
+                    <div className="time-task-name">{task.title}</div>
+                    <div className="time-total">
+                        <span className="time-total-label">TOTAL TIME</span>
+                        <span className="time-total-value">{formatDuration(totalMinutes)}</span>
+                    </div>
                 </div>
 
                 <form onSubmit={handleSubmit} className="time-form">
-                    <div className="form-row">
-                        <div className="input-group">
-                            <label className="input-label">Start</label>
-                            <input
-                                type="datetime-local"
-                                className="input"
-                                value={startTime}
-                                onChange={(e) => setStartTime(e.target.value)}
-                                required
-                            />
-                        </div>
-                        <div className="input-group">
-                            <label className="input-label">End</label>
-                            <input
-                                type="datetime-local"
-                                className="input"
-                                value={endTime}
-                                onChange={(e) => setEndTime(e.target.value)}
-                                required
-                            />
-                        </div>
-                    </div>
-                    <div className="input-group mt-4">
-                        <label className="input-label">Notes</label>
+                    <div className="time-form-label">Add Manual Entry</div>
+                    <div className="time-form-row">
                         <input
                             type="text"
                             className="input"
-                            placeholder="What did you work on?"
+                            placeholder="Note (e.g., Research)"
                             value={notes}
                             onChange={(e) => setNotes(e.target.value)}
                         />
+                        <input
+                            type="time"
+                            className="input"
+                            value={startTime.split('T')[1]?.substring(0, 5) || ''}
+                            onChange={(e) => setStartTime(`${new Date().toISOString().split('T')[0]}T${e.target.value}`)}
+                            required
+                        />
+                        <input
+                            type="time"
+                            className="input"
+                            value={endTime.split('T')[1]?.substring(0, 5) || ''}
+                            onChange={(e) => setEndTime(`${new Date().toISOString().split('T')[0]}T${e.target.value}`)}
+                            required
+                        />
+                        <button type="submit" className="btn btn-primary">Log</button>
                     </div>
-                    <button type="submit" className="btn btn-primary w-full mt-4">
-                        Add Time Entry
-                    </button>
                 </form>
 
                 {timeLogs.length > 0 && (
-                    <div className="time-log-list">
-                        <h4>Recent Entries</h4>
-                        {timeLogs.slice(0, 5).map((log) => (
-                            <div key={log.id} className="time-log-item">
-                                <div className="time-log-info">
-                                    <span className="time-log-duration">
-                                        {formatDuration(log.duration || 0)}
-                                    </span>
-                                    <span className="time-log-date">
-                                        {new Date(log.start_time).toLocaleDateString()}
-                                    </span>
-                                    {log.notes && <span className="time-log-notes">{log.notes}</span>}
-                                </div>
-                                <button
-                                    className="btn btn-ghost btn-sm"
-                                    onClick={() => remove(log.id)}
-                                >
-                                    🗑️
-                                </button>
-                            </div>
-                        ))}
+                    <div className="time-logs-table">
+                        <table className="table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Time Range</th>
+                                    <th>Note</th>
+                                    <th>Duration</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {timeLogs.map((log) => (
+                                    <tr key={log.id}>
+                                        <td>{new Date(log.start_time).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</td>
+                                        <td>
+                                            {new Date(log.start_time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                                            {log.end_time && ` - ${new Date(log.end_time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`}
+                                        </td>
+                                        <td>{log.notes || '-'}</td>
+                                        <td>{formatDuration(log.duration || 0)}</td>
+                                        <td>
+                                            <button
+                                                className="btn btn-ghost btn-sm"
+                                                onClick={() => remove(log.id)}
+                                            >
+                                                <TrashIcon size={16} />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
                 )}
 
                 <style>{`
-          .time-total {
+          .time-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             padding: var(--space-4);
-            background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(168, 85, 247, 0.2));
+            background: var(--color-gray-50);
             border-radius: var(--radius-lg);
             margin-bottom: var(--space-6);
           }
 
+          .time-task-name {
+            font-weight: var(--font-weight-semibold);
+            color: var(--color-gray-900);
+          }
+
+          .time-total {
+            text-align: right;
+          }
+
           .time-total-label {
-            color: var(--color-gray-300);
-            font-size: var(--font-size-sm);
+            display: block;
+            font-size: var(--font-size-xs);
+            color: var(--color-gray-500);
+            margin-bottom: var(--space-1);
           }
 
           .time-total-value {
             font-size: var(--font-size-2xl);
             font-weight: var(--font-weight-bold);
-            background: linear-gradient(135deg, var(--color-primary-400), var(--color-secondary-400));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            color: var(--color-primary-500);
           }
 
-          .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: var(--space-4);
+          .time-form {
+            margin-bottom: var(--space-6);
           }
 
-          .time-log-list {
-            margin-top: var(--space-6);
-            padding-top: var(--space-4);
-            border-top: 1px solid rgba(255, 255, 255, 0.08);
-          }
-
-          .time-log-list h4 {
+          .time-form-label {
             font-size: var(--font-size-sm);
-            color: var(--color-gray-400);
+            font-weight: var(--font-weight-medium);
+            color: var(--color-gray-700);
             margin-bottom: var(--space-3);
           }
 
-          .time-log-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: var(--space-3);
-            background: var(--bg-glass);
-            border-radius: var(--radius-md);
-            margin-bottom: var(--space-2);
+          .time-form-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr auto;
+            gap: var(--space-2);
           }
 
-          .time-log-info {
-            display: flex;
-            align-items: center;
-            gap: var(--space-3);
-            flex-wrap: wrap;
+          .time-logs-table {
+            border: 1px solid var(--color-gray-200);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
           }
 
-          .time-log-duration {
-            font-weight: var(--font-weight-medium);
-            color: var(--color-white);
-          }
-
-          .time-log-date {
-            font-size: var(--font-size-xs);
-            color: var(--color-gray-500);
-          }
-
-          .time-log-notes {
-            font-size: var(--font-size-xs);
-            color: var(--color-gray-400);
-          }
-
-          @media (max-width: 480px) {
-            .form-row {
+          @media (max-width: 640px) {
+            .time-form-row {
               grid-template-columns: 1fr;
             }
           }

@@ -19,7 +19,6 @@ export default function ReportsPage() {
     const [reportData, setReportData] = useState<ReportData | null>(null);
     const [isLoading, setIsLoading] = useState(false);
 
-    // Load organizations
     useEffect(() => {
         if (user) {
             supabase
@@ -31,7 +30,6 @@ export default function ReportsPage() {
         }
     }, [user]);
 
-    // Load projects when org changes
     useEffect(() => {
         if (selectedOrg) {
             supabase
@@ -75,7 +73,6 @@ export default function ReportsPage() {
         try {
             const { start, end } = getDateRange(period);
 
-            // Build project IDs to filter
             let projectIds: string[] = [];
             if (selectedProject) {
                 projectIds = [selectedProject];
@@ -92,7 +89,6 @@ export default function ReportsPage() {
                 return;
             }
 
-            // Fetch tasks
             const { data: tasks } = await supabase
                 .from('tasks')
                 .select('*')
@@ -100,7 +96,6 @@ export default function ReportsPage() {
                 .gte('created_at', start.toISOString())
                 .lte('created_at', end.toISOString());
 
-            // Fetch time logs
             const taskIds = tasks?.map((t) => t.id) || [];
             let timeLogs: { task_id: string; duration: number }[] = [];
 
@@ -122,7 +117,6 @@ export default function ReportsPage() {
         }
     };
 
-    // Compute report summary
     const summary = useMemo(() => {
         if (!reportData) return null;
 
@@ -133,7 +127,6 @@ export default function ReportsPage() {
         const todo = tasks.filter((t) => t.status === 'todo').length;
         const totalTime = timeLogs.reduce((sum, log) => sum + (log.duration || 0), 0);
 
-        // Group by project
         const byProject: Record<string, { total: number; done: number; time: number }> = {};
         for (const task of tasks) {
             if (!byProject[task.project_id]) {
@@ -165,12 +158,12 @@ export default function ReportsPage() {
             <div className="page-header">
                 <div>
                     <h1 className="page-title">Reports</h1>
-                    <p className="text-muted">Analyze your progress and time allocation</p>
+                    <p className="page-subtitle">Analyze your progress and time allocation</p>
                 </div>
             </div>
 
             {/* Filters */}
-            <div className="report-filters card">
+            <div className="report-filters">
                 <div className="filters-grid">
                     <div className="input-group">
                         <label className="input-label">Organization</label>
@@ -225,7 +218,7 @@ export default function ReportsPage() {
                             onClick={generateReport}
                             disabled={!selectedOrg || isLoading}
                         >
-                            {isLoading ? <span className="loading-spinner" /> : 'Generate Report'}
+                            {isLoading ? <span className="loading-spinner" /> : '📊 Generate Report'}
                         </button>
                     </div>
                 </div>
@@ -237,47 +230,62 @@ export default function ReportsPage() {
                     {/* Summary Cards */}
                     <div className="summary-grid">
                         <div className="summary-card">
-                            <span className="summary-value">{summary.total}</span>
-                            <span className="summary-label">Total Tasks</span>
+                            <div className="summary-icon">📋</div>
+                            <div className="summary-content">
+                                <span className="summary-value">{summary.total}</span>
+                                <span className="summary-label">Total Tasks</span>
+                            </div>
                         </div>
                         <div className="summary-card done">
-                            <span className="summary-value">{summary.done}</span>
-                            <span className="summary-label">Completed</span>
+                            <div className="summary-icon">✅</div>
+                            <div className="summary-content">
+                                <span className="summary-value">{summary.done}</span>
+                                <span className="summary-label">Completed</span>
+                            </div>
                         </div>
                         <div className="summary-card progress">
-                            <span className="summary-value">{summary.inProgress}</span>
-                            <span className="summary-label">In Progress</span>
+                            <div className="summary-icon">🔄</div>
+                            <div className="summary-content">
+                                <span className="summary-value">{summary.inProgress}</span>
+                                <span className="summary-label">In Progress</span>
+                            </div>
                         </div>
                         <div className="summary-card time">
-                            <span className="summary-value">{formatDuration(summary.totalTime)}</span>
-                            <span className="summary-label">Time Logged</span>
+                            <div className="summary-icon">⏱️</div>
+                            <div className="summary-content">
+                                <span className="summary-value">{formatDuration(summary.totalTime)}</span>
+                                <span className="summary-label">Time Logged</span>
+                            </div>
                         </div>
                     </div>
 
                     {/* Completion Rate */}
-                    <div className="card" style={{ marginTop: 'var(--space-6)' }}>
-                        <h3 className="card-title">Completion Rate</h3>
+                    <div className="completion-card">
+                        <div className="completion-header">
+                            <h3>Completion Rate</h3>
+                            <span className="completion-percent">{summary.completionRate}%</span>
+                        </div>
                         <div className="progress-bar-container">
                             <div
-                                className="progress-bar"
+                                className={`progress-bar ${summary.completionRate > 70 ? 'success' : summary.completionRate > 40 ? '' : 'warning'}`}
                                 style={{ width: `${summary.completionRate}%` }}
                             />
                         </div>
-                        <p className="text-muted text-center mt-4">
-                            {summary.completionRate}% of tasks completed
+                        <p className="completion-text">
+                            {summary.done} of {summary.total} tasks completed
                         </p>
                     </div>
 
                     {/* By Project Table */}
                     {Object.keys(summary.byProject).length > 0 && (
-                        <div className="table-container" style={{ marginTop: 'var(--space-6)' }}>
+                        <div className="table-container">
                             <table className="table">
                                 <thead>
                                     <tr>
                                         <th>Project</th>
                                         <th>Tasks</th>
                                         <th>Completed</th>
-                                        <th>Time</th>
+                                        <th>Time Logged</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -285,10 +293,15 @@ export default function ReportsPage() {
                                         const project = projects.find((p) => p.id === projectId);
                                         return (
                                             <tr key={projectId}>
-                                                <td>{project?.name || 'Unknown'}</td>
+                                                <td className="project-name-cell">
+                                                    <span className="project-icon">📁</span>
+                                                    {project?.name || 'Unknown'}
+                                                </td>
                                                 <td>{data.total}</td>
                                                 <td>
-                                                    {data.done} ({Math.round((data.done / data.total) * 100)}%)
+                                                    <span className="completion-badge">
+                                                        {data.done}/{data.total} ({Math.round((data.done / data.total) * 100)}%)
+                                                    </span>
                                                 </td>
                                                 <td>{formatDuration(data.time)}</td>
                                             </tr>
@@ -301,20 +314,24 @@ export default function ReportsPage() {
                 </div>
             )}
 
-            {/* Empty state before generating */}
+            {/* Empty state */}
             {!reportData && !isLoading && (
                 <div className="empty-state">
                     <div className="empty-state-icon">📊</div>
                     <h3 className="empty-state-title">Generate a Report</h3>
                     <p className="empty-state-description">
-                        Select an organization and time period, then click Generate Report to see your
-                        progress summary.
+                        Select an organization and time period, then click Generate Report
+                        to see your progress summary.
                     </p>
                 </div>
             )}
 
             <style>{`
         .report-filters {
+          background: var(--color-white);
+          border: 1px solid var(--color-gray-200);
+          border-radius: var(--radius-xl);
+          padding: var(--space-6);
           margin-bottom: var(--space-8);
         }
 
@@ -332,65 +349,120 @@ export default function ReportsPage() {
 
         .summary-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+          grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
           gap: var(--space-4);
+          margin-bottom: var(--space-6);
         }
 
         .summary-card {
           display: flex;
-          flex-direction: column;
           align-items: center;
-          padding: var(--space-6);
-          background: var(--bg-card);
-          border: 1px solid rgba(255, 255, 255, 0.08);
+          gap: var(--space-4);
+          padding: var(--space-5);
+          background: var(--color-white);
+          border: 1px solid var(--color-gray-200);
           border-radius: var(--radius-xl);
         }
 
+        .summary-icon {
+          width: 48px;
+          height: 48px;
+          background: var(--color-gray-100);
+          border-radius: var(--radius-lg);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 1.5rem;
+        }
+
+        .summary-card.done .summary-icon {
+          background: var(--color-success-light);
+        }
+
+        .summary-card.progress .summary-icon {
+          background: var(--color-info-light);
+        }
+
+        .summary-card.time .summary-icon {
+          background: var(--color-primary-100);
+        }
+
+        .summary-content {
+          display: flex;
+          flex-direction: column;
+        }
+
         .summary-value {
-          font-size: var(--font-size-3xl);
+          font-size: var(--font-size-2xl);
           font-weight: var(--font-weight-bold);
-          color: var(--color-white);
+          color: var(--color-gray-900);
         }
 
         .summary-label {
           font-size: var(--font-size-sm);
-          color: var(--color-gray-400);
-          margin-top: var(--space-2);
+          color: var(--color-gray-500);
         }
 
-        .summary-card.done .summary-value {
-          color: var(--color-success);
+        .completion-card {
+          background: var(--color-white);
+          border: 1px solid var(--color-gray-200);
+          border-radius: var(--radius-xl);
+          padding: var(--space-6);
+          margin-bottom: var(--space-6);
         }
 
-        .summary-card.progress .summary-value {
-          color: var(--color-primary-400);
+        .completion-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: var(--space-4);
         }
 
-        .summary-card.time .summary-value {
-          background: linear-gradient(135deg, var(--color-primary-400), var(--color-secondary-400));
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
+        .completion-header h3 {
+          font-size: var(--font-size-lg);
+          font-weight: var(--font-weight-semibold);
         }
 
-        .progress-bar-container {
-          height: 12px;
-          background: rgba(255, 255, 255, 0.1);
-          border-radius: var(--radius-full);
-          overflow: hidden;
-          margin-top: var(--space-4);
+        .completion-percent {
+          font-size: var(--font-size-xl);
+          font-weight: var(--font-weight-bold);
+          color: var(--color-primary-500);
         }
 
-        .progress-bar {
-          height: 100%;
-          background: linear-gradient(90deg, var(--color-primary-500), var(--color-success));
-          border-radius: var(--radius-full);
-          transition: width var(--transition-slow);
+        .completion-text {
+          margin-top: var(--space-3);
+          font-size: var(--font-size-sm);
+          color: var(--color-gray-500);
+          text-align: center;
+        }
+
+        .project-name-cell {
+          display: flex;
+          align-items: center;
+          gap: var(--space-2);
+        }
+
+        .project-icon {
+          font-size: 1rem;
+        }
+
+        .completion-badge {
+          display: inline-flex;
+          padding: var(--space-1) var(--space-2);
+          background: var(--color-success-light);
+          color: #15803d;
+          border-radius: var(--radius-sm);
+          font-size: var(--font-size-sm);
+          font-weight: var(--font-weight-medium);
         }
 
         @media (max-width: 640px) {
           .filters-grid {
             grid-template-columns: 1fr;
+          }
+
+          .summary-grid {
+            grid-template-columns: 1fr 1fr;
           }
         }
       `}</style>

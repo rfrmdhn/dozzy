@@ -7,6 +7,7 @@ import DashboardPage from './pages/DashboardPage';
 import ProjectsPage from './pages/ProjectsPage';
 import TasksPage from './pages/TasksPage';
 import ReportsPage from './pages/ReportsPage';
+import SettingsPage from './pages/SettingsPage';
 
 function App() {
   return (
@@ -23,6 +24,7 @@ function App() {
               <Route path="/organizations/:orgId/projects" element={<ProjectsPage />} />
               <Route path="/projects/:projectId/tasks" element={<TasksPage />} />
               <Route path="/reports" element={<ReportsPage />} />
+              <Route path="/settings" element={<SettingsPage />} />
             </Route>
           </Route>
 
