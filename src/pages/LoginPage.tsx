@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 
 export default function LoginPage() {
     const [email, setEmail] = useState('');
+    const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [isSignUp, setIsSignUp] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
@@ -21,7 +22,7 @@ export default function LoginPage() {
 
         try {
             const { error } = isSignUp
-                ? await signUp(email, password)
+                ? await signUp(email, password, username)
                 : await signIn(email, password);
 
             if (error) {
@@ -117,21 +118,42 @@ export default function LoginPage() {
                             </div>
                         )}
 
+                        {isSignUp && (
+                            <div className="input-group">
+                                <label htmlFor="username" className="input-label">
+                                    Username
+                                </label>
+                                <div className="input-with-icon">
+                                    <span className="input-icon">👤</span>
+                                    <input
+                                        id="username"
+                                        type="text"
+                                        className="input"
+                                        placeholder="johndoe"
+                                        value={username}
+                                        onChange={(e) => setUsername(e.target.value)}
+                                        required={isSignUp}
+                                        autoComplete="username"
+                                    />
+                                </div>
+                            </div>
+                        )}
+
                         <div className="input-group">
                             <label htmlFor="email" className="input-label">
-                                Email address
+                                {isSignUp ? 'Email address' : 'Username or Email'}
                             </label>
                             <div className="input-with-icon">
                                 <span className="input-icon">✉️</span>
                                 <input
                                     id="email"
-                                    type="email"
+                                    type={isSignUp ? "email" : "text"}
                                     className="input"
-                                    placeholder="name@company.com"
+                                    placeholder={isSignUp ? "name@company.com" : "name@company.com or username"}
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     required
-                                    autoComplete="email"
+                                    autoComplete="username"
                                 />
                             </div>
                         </div>
