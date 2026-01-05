@@ -1,11 +1,11 @@
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { DashboardIcon, ReportsIcon, SettingsIcon, CheckCircleIcon, LogOutIcon } from '../icons';
 
 const navItems = [
-    { path: '/', label: 'Dashboard', icon: '📊' },
-    { path: '/organizations', label: 'Organizations', icon: '🏢' },
-    { path: '/reports', label: 'Reports', icon: '📈' },
-    { path: '/settings', label: 'Settings', icon: '⚙️' },
+    { path: '/', label: 'Dashboard', icon: <DashboardIcon size={20} /> },
+    { path: '/reports', label: 'Reports', icon: <ReportsIcon size={20} /> },
+    { path: '/settings', label: 'Settings', icon: <SettingsIcon size={20} /> },
 ];
 
 export default function MainLayout() {
@@ -21,7 +21,7 @@ export default function MainLayout() {
             {/* Sidebar */}
             <aside className="sidebar">
                 <div className="sidebar-header">
-                    <div className="sidebar-logo-icon">✓</div>
+                    <div className="sidebar-logo-icon"><CheckCircleIcon size={24} color="white" /></div>
                     <div>
                         <div className="sidebar-logo-text">Dozzy</div>
                         <div className="sidebar-logo-subtext">Task Manager</div>
@@ -54,7 +54,7 @@ export default function MainLayout() {
                         </div>
                     </div>
                     <button className="btn btn-ghost w-full mt-4" onClick={signOut}>
-                        Sign Out
+                        <LogOutIcon size={20} /> Sign Out
                     </button>
                 </div>
             </aside>
@@ -62,11 +62,11 @@ export default function MainLayout() {
             {/* Mobile Header */}
             <header className="mobile-header">
                 <div className="mobile-logo">
-                    <span className="sidebar-logo-icon">✓</span>
+                    <span className="sidebar-logo-icon"><CheckCircleIcon size={24} /></span>
                     <span className="sidebar-logo-text">Dozzy</span>
                 </div>
                 <button className="btn btn-ghost" onClick={signOut}>
-                    Sign Out
+                    <LogOutIcon size={20} />
                 </button>
             </header>
 

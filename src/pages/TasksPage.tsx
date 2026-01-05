@@ -4,6 +4,7 @@ import { useTasks } from '../hooks/useTasks';
 import { useTimeLogs, formatDuration } from '../hooks/useTimeLogs';
 import { supabase } from '../lib/supabase';
 import type { Task, TaskInput, TaskStatus, TaskPriority, Project, Organization } from '../types';
+import { BuildingIcon, EditIcon, ShareIcon, SearchIcon, ListIcon, KanbanIcon, FilterIcon, SortIcon, PlusIcon, FlagIcon, CheckCircleIcon, CalendarIcon, ClockIcon, TrashIcon, CloseIcon } from '../components/icons';
 
 export default function TasksPage() {
     const { projectId } = useParams<{ projectId: string }>();
@@ -22,6 +23,12 @@ export default function TasksPage() {
         priority: 'medium',
         due_date: '',
     });
+    const [viewMode, setViewMode] = useState<'list' | 'board'>('list');
+    const [filterStatus, setFilterStatus] = useState<string>('all');
+    const [sortBy, setSortBy] = useState<string>('date');
+    const [showFilterMenu, setShowFilterMenu] = useState(false);
+    const [showSortMenu, setShowSortMenu] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
 
     useEffect(() => {
         if (projectId) {
@@ -103,19 +110,29 @@ export default function TasksPage() {
     };
 
     const getPriorityIcon = (priority: TaskPriority) => {
-        switch (priority) {
-            case 'high': return '🚩';
-            case 'medium': return '🚩';
-            case 'low': return '🚩';
-            default: return '🚩';
-        }
+        const colors: Record<string, string> = {
+            high: 'var(--color-error)',
+            medium: 'var(--color-warning)',
+            low: 'var(--color-success)'
+        };
+        return <FlagIcon size={14} style={{ color: colors[priority] || 'var(--color-gray-400)' }} />;
+    };
+
+    const handleShare = () => {
+        const url = window.location.href;
+        navigator.clipboard.writeText(url);
+        alert('Project link copied to clipboard!');
+    };
+
+    const handleEditDetails = () => {
+        setShowEditModal(true);
     };
 
     return (
         <div className="page-container">
             {/* Breadcrumb */}
             <div className="breadcrumb">
-                <span>🏢</span>
+                <BuildingIcon size={16} />
                 <Link to="/">Organization</Link>
                 <span className="breadcrumb-separator">/</span>
                 <span className="breadcrumb-current">{project?.name || 'Project'}</span>
@@ -130,8 +147,8 @@ export default function TasksPage() {
                     )}
                 </div>
                 <div className="project-header-actions">
-                    <button className="btn btn-secondary" disabled title="Coming soon">✏️ Edit Details</button>
-                    <button className="btn btn-secondary" disabled title="Coming soon">📤 Share</button>
+                    <button className="btn btn-secondary" onClick={handleEditDetails}><EditIcon size={16} /> Edit Details</button>
+                    <button className="btn btn-secondary" onClick={handleShare}><ShareIcon size={16} /> Share</button>
                 </div>
             </div>
 
@@ -149,7 +166,7 @@ export default function TasksPage() {
             {/* Toolbar */}
             <div className="tasks-toolbar">
                 <div className="search-box">
-                    <span className="search-icon">🔍</span>
+                    <SearchIcon size={18} className="search-icon" />
                     <input
                         type="text"
                         className="search-input"
@@ -159,12 +176,37 @@ export default function TasksPage() {
                     />
                 </div>
                 <div className="toolbar-actions">
-                    <button className="btn btn-secondary btn-sm active">☰ List</button>
-                    <button className="btn btn-secondary btn-sm" disabled title="Coming soon">⊞ Board</button>
-                    <button className="btn btn-secondary btn-sm" disabled title="Coming soon">🔽 Filter</button>
-                    <button className="btn btn-secondary btn-sm" disabled title="Coming soon">↕️ Sort</button>
+                    <div className="view-toggle">
+                        <button className={`btn btn-icon ${viewMode === 'list' ? 'active' : ''}`} onClick={() => setViewMode('list')}><ListIcon size={18} /></button>
+                        <button className={`btn btn-icon ${viewMode === 'board' ? 'active' : ''}`} onClick={() => setViewMode('board')}><KanbanIcon size={18} /></button>
+                    </div>
+                    <div className="dropdown">
+                        <button className="btn btn-secondary btn-sm" onClick={() => setShowFilterMenu(!showFilterMenu)}>
+                            <FilterIcon size={16} /> Filter
+                        </button>
+                        {showFilterMenu && (
+                            <div className="dropdown-menu">
+                                <button className={`dropdown-item ${filterStatus === 'all' ? 'active' : ''}`} onClick={() => { setFilterStatus('all'); setShowFilterMenu(false); }}>All</button>
+                                <button className={`dropdown-item ${filterStatus === 'todo' ? 'active' : ''}`} onClick={() => { setFilterStatus('todo'); setShowFilterMenu(false); }}>To Do</button>
+                                <button className={`dropdown-item ${filterStatus === 'in_progress' ? 'active' : ''}`} onClick={() => { setFilterStatus('in_progress'); setShowFilterMenu(false); }}>In Progress</button>
+                                <button className={`dropdown-item ${filterStatus === 'done' ? 'active' : ''}`} onClick={() => { setFilterStatus('done'); setShowFilterMenu(false); }}>Done</button>
+                            </div>
+                        )}
+                    </div>
+                    <div className="dropdown">
+                        <button className="btn btn-secondary btn-sm" onClick={() => setShowSortMenu(!showSortMenu)}>
+                            <SortIcon size={16} /> Sort
+                        </button>
+                        {showSortMenu && (
+                            <div className="dropdown-menu">
+                                <button className={`dropdown-item ${sortBy === 'date' ? 'active' : ''}`} onClick={() => { setSortBy('date'); setShowSortMenu(false); }}>Date</button>
+                                <button className={`dropdown-item ${sortBy === 'priority' ? 'active' : ''}`} onClick={() => { setSortBy('priority'); setShowSortMenu(false); }}>Priority</button>
+                                <button className={`dropdown-item ${sortBy === 'name' ? 'active' : ''}`} onClick={() => { setSortBy('name'); setShowSortMenu(false); }}>Name</button>
+                            </div>
+                        )}
+                    </div>
                     <button className="btn btn-primary" onClick={() => setShowModal(true)}>
-                        + New Task
+                        <PlusIcon size={16} /> New Task
                     </button>
                 </div>
             </div>
@@ -176,7 +218,7 @@ export default function TasksPage() {
                 </div>
             ) : filteredTasks.length === 0 ? (
                 <div className="empty-state">
-                    <div className="empty-state-icon">✅</div>
+                    <div className="empty-state-icon"><CheckCircleIcon size={48} /></div>
                     <h3 className="empty-state-title">
                         {searchQuery ? 'No tasks found' : 'No tasks yet'}
                     </h3>
@@ -187,7 +229,7 @@ export default function TasksPage() {
                     </p>
                     {!searchQuery && (
                         <button className="btn btn-primary" onClick={() => setShowModal(true)}>
-                            Create Task
+                            <PlusIcon size={16} /> Create Task
                         </button>
                     )}
                 </div>
@@ -245,7 +287,7 @@ export default function TasksPage() {
                                     <td>
                                         {task.due_date && (
                                             <span className="due-date">
-                                                📅 {new Date(task.due_date).toLocaleDateString('en-US', {
+                                                <CalendarIcon size={14} /> {new Date(task.due_date).toLocaleDateString('en-US', {
                                                     month: 'short',
                                                     day: 'numeric',
                                                     year: 'numeric',
@@ -260,21 +302,21 @@ export default function TasksPage() {
                                                 onClick={() => handleOpenTimeLog(task)}
                                                 title="Log time"
                                             >
-                                                ⏱️
+                                                <ClockIcon size={16} />
                                             </button>
                                             <button
                                                 className="btn btn-ghost btn-sm"
                                                 onClick={() => handleEdit(task)}
                                                 title="Edit"
                                             >
-                                                ✏️
+                                                <EditIcon size={16} />
                                             </button>
                                             <button
                                                 className="btn btn-ghost btn-sm"
                                                 onClick={() => handleDelete(task.id)}
                                                 title="Delete"
                                             >
-                                                🗑️
+                                                <TrashIcon size={16} />
                                             </button>
                                         </div>
                                     </td>
@@ -301,7 +343,7 @@ export default function TasksPage() {
                                 {editingTask ? 'Edit Task' : 'New Task'}
                             </h2>
                             <button className="modal-close" onClick={handleCloseModal}>
-                                ✕
+                                <CloseIcon size={20} />
                             </button>
                         </div>
                         <form onSubmit={handleSubmit}>
@@ -387,6 +429,51 @@ export default function TasksPage() {
                 </div>
             )}
 
+            {/* Edit Project Modal */}
+            {showEditModal && (
+                <div className="modal-overlay" onClick={() => setShowEditModal(false)}>
+                    <div className="modal" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h2 className="modal-title">Edit Project Details</h2>
+                            <button className="modal-close" onClick={() => setShowEditModal(false)}>
+                                <CloseIcon size={20} />
+                            </button>
+                        </div>
+                        <form onSubmit={(e) => { e.preventDefault(); setShowEditModal(false); }}>
+                            <div className="input-group">
+                                <label className="input-label">Project Name</label>
+                                <input
+                                    type="text"
+                                    className="input"
+                                    defaultValue={project?.name}
+                                    autoFocus
+                                />
+                            </div>
+                            <div className="input-group mt-4">
+                                <label className="input-label">Description</label>
+                                <textarea
+                                    className="input"
+                                    defaultValue={project?.description || ''}
+                                    rows={3}
+                                />
+                            </div>
+                            <div className="modal-footer">
+                                <button
+                                    type="button"
+                                    className="btn btn-secondary"
+                                    onClick={() => setShowEditModal(false)}
+                                >
+                                    Cancel
+                                </button>
+                                <button type="submit" className="btn btn-primary">
+                                    Save Changes
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
             {/* Time Log Modal */}
             {showTimeModal && selectedTask && (
                 <TimeLogModal
@@ -399,6 +486,95 @@ export default function TasksPage() {
             )}
 
             <style>{`
+        .dropdown {
+          position: relative;
+        }
+
+        .dropdown-menu {
+          position: absolute;
+          top: 100%;
+          left: 0;
+          margin-top: var(--space-2);
+          background: var(--color-white);
+          border: 1px solid var(--color-gray-200);
+          border-radius: var(--radius-md);
+          box-shadow: var(--shadow-lg);
+          min-width: 160px;
+          z-index: 50;
+          padding: var(--space-1);
+        }
+
+        .dropdown-item {
+          display: block;
+          width: 100%;
+          text-align: left;
+          padding: var(--space-2) var(--space-3);
+          font-size: var(--font-size-sm);
+          color: var(--color-gray-700);
+          background: none;
+          border: none;
+          cursor: pointer;
+          border-radius: var(--radius-sm);
+        }
+
+        .dropdown-item:hover {
+          background: var(--color-gray-50);
+        }
+
+        .dropdown-item.active {
+          color: var(--color-primary-600);
+          background: var(--color-primary-50);
+          font-weight: var(--font-weight-medium);
+        }
+
+        .view-toggle {
+          display: flex;
+          background: var(--color-gray-100);
+          padding: 2px;
+          border-radius: var(--radius-md);
+        }
+
+        .btn-icon {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 32px;
+          height: 32px;
+          border: none;
+          background: none;
+          color: var(--color-gray-500);
+          border-radius: var(--radius-md);
+          cursor: pointer;
+        }
+
+        .btn-icon:hover {
+          color: var(--color-gray-700);
+        }
+
+        .btn-icon.active {
+          background: var(--color-white);
+          color: var(--color-primary-600);
+          box-shadow: var(--shadow-sm);
+        }
+
+        .breadcrumb {
+          display: flex;
+          align-items: center;
+          gap: var(--space-2);
+          font-size: var(--font-size-sm);
+          color: var(--color-gray-500);
+          margin-bottom: var(--space-4);
+        }
+
+        .breadcrumb a {
+          color: inherit;
+          text-decoration: none;
+        }
+
+        .breadcrumb a:hover {
+          color: var(--color-primary-500);
+        }
+
         .project-header {
           display: flex;
           justify-content: space-between;
@@ -409,7 +585,8 @@ export default function TasksPage() {
         .project-header-title {
           font-size: var(--font-size-3xl);
           font-weight: var(--font-weight-bold);
-          margin-bottom: var(--space-2);
+          color: var(--color-gray-900);
+          margin-bottom: var(--space-1);
         }
 
         .project-header-description {
@@ -418,15 +595,13 @@ export default function TasksPage() {
 
         .project-header-actions {
           display: flex;
-          gap: var(--space-2);
+          gap: var(--space-3);
         }
 
+
+
         .project-progress {
-          background: var(--color-white);
-          border: 1px solid var(--color-gray-200);
-          border-radius: var(--radius-xl);
-          padding: var(--space-4);
-          margin-bottom: var(--space-6);
+          margin-bottom: var(--space-8);
         }
 
         .progress-header {
@@ -437,9 +612,32 @@ export default function TasksPage() {
           color: var(--color-gray-600);
         }
 
+        .progress-header {
+          display: flex;
+          justify-content: space-between;
+          margin-bottom: var(--space-2);
+          font-size: var(--font-size-sm);
+          font-weight: var(--font-weight-medium);
+          color: var(--color-gray-700);
+        }
+
         .progress-value {
           color: var(--color-primary-500);
           font-weight: var(--font-weight-semibold);
+        }
+
+        .progress-bar-container {
+          height: 8px;
+          background: var(--color-gray-100);
+          border-radius: 4px;
+          overflow: hidden;
+        }
+
+        .progress-bar {
+          height: 100%;
+          background: var(--color-primary-500);
+          border-radius: 4px;
+          transition: width 0.5s ease-out;
         }
 
         .tasks-toolbar {
@@ -453,8 +651,12 @@ export default function TasksPage() {
 
         .search-box {
           position: relative;
-          flex: 1;
-          max-width: 400px;
+          width: 300px;
+        }
+
+        .search-box {
+          position: relative;
+          width: 300px;
         }
 
         .search-icon {
@@ -462,6 +664,14 @@ export default function TasksPage() {
           left: var(--space-3);
           top: 50%;
           transform: translateY(-50%);
+        }
+
+        .search-icon {
+          position: absolute;
+          left: var(--space-3);
+          top: 50%;
+          transform: translateY(-50%);
+          color: var(--color-gray-400);
         }
 
         .search-input {
@@ -483,6 +693,12 @@ export default function TasksPage() {
         .toolbar-actions {
           display: flex;
           gap: var(--space-2);
+        }
+
+        .toolbar-actions {
+          display: flex;
+          gap: var(--space-2);
+          align-items: center;
         }
 
         .task-checkbox {
@@ -512,7 +728,17 @@ export default function TasksPage() {
           color: var(--color-gray-500);
         }
 
+
+
         .due-date {
+          font-size: var(--font-size-sm);
+          color: var(--color-gray-600);
+        }
+
+        .due-date {
+          display: flex;
+          align-items: center;
+          gap: var(--space-2);
           font-size: var(--font-size-sm);
           color: var(--color-gray-600);
         }
@@ -557,6 +783,15 @@ export default function TasksPage() {
 
           .tasks-toolbar {
             flex-direction: column;
+          }
+
+          .tasks-toolbar {
+
+            flex-direction: column;
+          }
+
+          .search-box {
+            max-width: none;
           }
 
           .search-box {
@@ -604,9 +839,9 @@ function TimeLogModal({ task, onClose }: { task: Task; onClose: () => void }) {
         <div className="modal-overlay" onClick={onClose}>
             <div className="modal" style={{ maxWidth: '600px' }} onClick={(e) => e.stopPropagation()}>
                 <div className="modal-header">
-                    <h2 className="modal-title">⏱️ Time Logs</h2>
+                    <h2 className="modal-title">Time Logs</h2>
                     <button className="modal-close" onClick={onClose}>
-                        ✕
+                        <CloseIcon size={20} />
                     </button>
                 </div>
 
@@ -673,7 +908,7 @@ function TimeLogModal({ task, onClose }: { task: Task; onClose: () => void }) {
                                                 className="btn btn-ghost btn-sm"
                                                 onClick={() => remove(log.id)}
                                             >
-                                                🗑️
+                                                <TrashIcon size={16} />
                                             </button>
                                         </td>
                                     </tr>

@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useProjects } from '../hooks/useProjects';
 import { supabase } from '../lib/supabase';
 import type { ProjectInput, Organization } from '../types';
+import { BuildingIcon, CalendarIcon, UsersIcon, EditIcon, FolderIcon, PlusIcon, FilterIcon, SortIcon, SearchIcon, GridIcon, ListIcon } from '../components/icons';
 
 export default function ProjectsPage() {
     const { orgId } = useParams<{ orgId: string }>();
@@ -19,6 +20,12 @@ export default function ProjectsPage() {
         start_date: '',
         end_date: '',
     });
+    const [searchQuery, setSearchQuery] = useState('');
+    const [filterStatus, setFilterStatus] = useState<string>('all');
+    const [sortBy, setSortBy] = useState<string>('recent');
+    const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+    const [showFilterMenu, setShowFilterMenu] = useState(false);
+    const [showSortMenu, setShowSortMenu] = useState(false);
 
     useEffect(() => {
         if (orgId) {
@@ -89,7 +96,7 @@ export default function ProjectsPage() {
             {/* Organization Header */}
             <div className="org-header">
                 <div className="org-header-icon">
-                    <span>🏢</span>
+                    <BuildingIcon size={32} />
                 </div>
                 <div className="org-header-content">
                     <h1 className="org-header-title">{organization?.name || 'Organization'}</h1>
@@ -97,8 +104,8 @@ export default function ProjectsPage() {
                         <p className="org-header-description">{organization.description}</p>
                     )}
                     <div className="org-header-meta">
-                        <span>📅 Created {organization?.created_at ? new Date(organization.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''}</span>
-                        <span>👥 {projects.length} Projects</span>
+                        <span><CalendarIcon size={14} /> Created {organization?.created_at ? new Date(organization.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''}</span>
+                        <span><UsersIcon size={14} /> {projects.length} Projects</span>
                     </div>
                 </div>
                 <button className="btn btn-secondary" onClick={() => {
@@ -107,22 +114,57 @@ export default function ProjectsPage() {
                         setShowOrgEditModal(true);
                     }
                 }}>
-                    ✏️ Edit Org
+                    <EditIcon size={16} /> Edit Org
                 </button>
+            </div>
+
+            {/* Search Bar */}
+            <div className="search-bar">
+                <SearchIcon size={18} />
+                <input
+                    type="text"
+                    placeholder="Search projects, tasks, or tags..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="search-input"
+                />
             </div>
 
             {/* Toolbar */}
             <div className="toolbar">
                 <div className="toolbar-left">
-                    <button className="btn btn-secondary btn-sm" disabled title="Coming soon">
-                        🔽 Filter
-                    </button>
-                    <button className="btn btn-secondary btn-sm" disabled title="Coming soon">
-                        ↕️ Sort: Recent
-                    </button>
+                    <div className="dropdown">
+                        <button className="btn btn-secondary btn-sm" onClick={() => setShowFilterMenu(!showFilterMenu)}>
+                            <FilterIcon size={16} /> Filter
+                        </button>
+                        {showFilterMenu && (
+                            <div className="dropdown-menu">
+                                <button className={`dropdown-item ${filterStatus === 'all' ? 'active' : ''}`} onClick={() => { setFilterStatus('all'); setShowFilterMenu(false); }}>All</button>
+                                <button className={`dropdown-item ${filterStatus === 'active' ? 'active' : ''}`} onClick={() => { setFilterStatus('active'); setShowFilterMenu(false); }}>Active</button>
+                                <button className={`dropdown-item ${filterStatus === 'draft' ? 'active' : ''}`} onClick={() => { setFilterStatus('draft'); setShowFilterMenu(false); }}>Draft</button>
+                                <button className={`dropdown-item ${filterStatus === 'delayed' ? 'active' : ''}`} onClick={() => { setFilterStatus('delayed'); setShowFilterMenu(false); }}>Delayed</button>
+                            </div>
+                        )}
+                    </div>
+                    <div className="dropdown">
+                        <button className="btn btn-secondary btn-sm" onClick={() => setShowSortMenu(!showSortMenu)}>
+                            <SortIcon size={16} /> Sort: {sortBy === 'recent' ? 'Recent' : sortBy === 'name' ? 'Name' : 'Progress'}
+                        </button>
+                        {showSortMenu && (
+                            <div className="dropdown-menu">
+                                <button className={`dropdown-item ${sortBy === 'recent' ? 'active' : ''}`} onClick={() => { setSortBy('recent'); setShowSortMenu(false); }}>Recent</button>
+                                <button className={`dropdown-item ${sortBy === 'name' ? 'active' : ''}`} onClick={() => { setSortBy('name'); setShowSortMenu(false); }}>Name</button>
+                                <button className={`dropdown-item ${sortBy === 'progress' ? 'active' : ''}`} onClick={() => { setSortBy('progress'); setShowSortMenu(false); }}>Progress</button>
+                            </div>
+                        )}
+                    </div>
+                    <div className="view-toggle">
+                        <button className={`btn btn-icon ${viewMode === 'grid' ? 'active' : ''}`} onClick={() => setViewMode('grid')}><GridIcon size={18} /></button>
+                        <button className={`btn btn-icon ${viewMode === 'list' ? 'active' : ''}`} onClick={() => setViewMode('list')}><ListIcon size={18} /></button>
+                    </div>
                 </div>
                 <button className="btn btn-primary" onClick={() => setShowModal(true)}>
-                    New Project
+                    <PlusIcon size={16} /> New Project
                 </button>
             </div>
 
@@ -133,13 +175,13 @@ export default function ProjectsPage() {
                 </div>
             ) : projects.length === 0 ? (
                 <div className="empty-state">
-                    <div className="empty-state-icon">📂</div>
+                    <div className="empty-state-icon"><FolderIcon size={48} /></div>
                     <h3 className="empty-state-title">No projects yet</h3>
                     <p className="empty-state-description">
                         Create your first project to start tracking tasks.
                     </p>
                     <button className="btn btn-primary" onClick={() => setShowModal(true)}>
-                        Create Project
+                        <PlusIcon size={16} /> Create Project
                     </button>
                 </div>
             ) : (
@@ -153,7 +195,7 @@ export default function ProjectsPage() {
                                 onClick={() => navigate(`/projects/${project.id}/tasks`)}
                             >
                                 <div className="project-card-header">
-                                    <div className="project-card-icon">📁</div>
+                                    <div className="project-card-icon"><FolderIcon size={24} /></div>
                                     <div className="project-card-info">
                                         <h3 className="project-card-name">{project.name}</h3>
                                         <span className="project-card-category">{project.description || 'No description'}</span>
