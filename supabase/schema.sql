@@ -2,6 +2,22 @@
 -- Run this in your Supabase SQL Editor
 
 -- ============================================
+-- Users Table (Public Profile)
+-- ============================================
+-- Supabase handles Auth in a separate schema (auth.users). 
+-- This table mirrors it for public access and additional profile fields.
+CREATE TABLE IF NOT EXISTS users (
+  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  username VARCHAR(255) UNIQUE,
+  email VARCHAR(255),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Toggle to true to enable auto-sync from auth.users
+-- (Requires enabling the trigger at the bottom of the file)
+
+-- ============================================
 -- Organizations Table
 -- ============================================
 CREATE TABLE IF NOT EXISTS organizations (
@@ -135,3 +151,39 @@ CREATE TRIGGER update_projects_updated_at
 CREATE TRIGGER update_tasks_updated_at
   BEFORE UPDATE ON tasks
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- ============================================
+-- User Sync Trigger (Auth -> Public)
+-- ============================================
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.users (id, email, username)
+  VALUES (
+    new.id, 
+    new.email, 
+    new.raw_user_meta_data->>'username'
+  );
+  RETURN new;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Trigger to create public user profile on signup
+CREATE OR REPLACE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- ============================================
+-- Users RLS
+-- ============================================
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view own profile" ON users
+  FOR SELECT USING (auth.uid() = id);
+
+-- Allow public to query username -> email mapping for login
+CREATE POLICY "Public can lookup by username" ON users
+  FOR SELECT USING (true);
+
+CREATE POLICY "Users can update own profile" ON users
+  FOR UPDATE USING (auth.uid() = id);
