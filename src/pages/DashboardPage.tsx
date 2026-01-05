@@ -152,9 +152,6 @@ export default function DashboardPage() {
             <div className="section">
                 <div className="section-header">
                     <h2 className="section-title">Your Organizations</h2>
-                    <button className="btn btn-ghost" onClick={() => navigate('/organizations')}>
-                        View All
-                    </button>
                 </div>
 
                 {isLoading ? (

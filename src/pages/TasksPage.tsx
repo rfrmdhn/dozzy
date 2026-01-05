@@ -130,8 +130,8 @@ export default function TasksPage() {
                     )}
                 </div>
                 <div className="project-header-actions">
-                    <button className="btn btn-secondary">✏️ Edit Details</button>
-                    <button className="btn btn-secondary">📤 Share</button>
+                    <button className="btn btn-secondary" disabled title="Coming soon">✏️ Edit Details</button>
+                    <button className="btn btn-secondary" disabled title="Coming soon">📤 Share</button>
                 </div>
             </div>
 
@@ -159,10 +159,10 @@ export default function TasksPage() {
                     />
                 </div>
                 <div className="toolbar-actions">
-                    <button className="btn btn-secondary btn-sm">☰ List</button>
-                    <button className="btn btn-secondary btn-sm">⊞ Board</button>
-                    <button className="btn btn-secondary btn-sm">🔽 Filter</button>
-                    <button className="btn btn-secondary btn-sm">↕️ Sort</button>
+                    <button className="btn btn-secondary btn-sm active">☰ List</button>
+                    <button className="btn btn-secondary btn-sm" disabled title="Coming soon">⊞ Board</button>
+                    <button className="btn btn-secondary btn-sm" disabled title="Coming soon">🔽 Filter</button>
+                    <button className="btn btn-secondary btn-sm" disabled title="Coming soon">↕️ Sort</button>
                     <button className="btn btn-primary" onClick={() => setShowModal(true)}>
                         + New Task
                     </button>

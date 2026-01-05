@@ -10,7 +10,9 @@ export default function ProjectsPage() {
     const { projects, isLoading, create, update, remove } = useProjects(orgId);
     const [organization, setOrganization] = useState<Organization | null>(null);
     const [showModal, setShowModal] = useState(false);
+    const [showOrgEditModal, setShowOrgEditModal] = useState(false);
     const [editingProject, setEditingProject] = useState<string | null>(null);
+    const [orgFormData, setOrgFormData] = useState({ name: '', description: '' });
     const [formData, setFormData] = useState<Omit<ProjectInput, 'organization_id'>>({
         name: '',
         description: '',
@@ -99,7 +101,12 @@ export default function ProjectsPage() {
                         <span>👥 {projects.length} Projects</span>
                     </div>
                 </div>
-                <button className="btn btn-secondary" onClick={() => navigate(`/organizations/${orgId}/edit`)}>
+                <button className="btn btn-secondary" onClick={() => {
+                    if (organization) {
+                        setOrgFormData({ name: organization.name, description: organization.description || '' });
+                        setShowOrgEditModal(true);
+                    }
+                }}>
                     ✏️ Edit Org
                 </button>
             </div>
@@ -107,10 +114,10 @@ export default function ProjectsPage() {
             {/* Toolbar */}
             <div className="toolbar">
                 <div className="toolbar-left">
-                    <button className="btn btn-secondary btn-sm">
+                    <button className="btn btn-secondary btn-sm" disabled title="Coming soon">
                         🔽 Filter
                     </button>
-                    <button className="btn btn-secondary btn-sm">
+                    <button className="btn btn-secondary btn-sm" disabled title="Coming soon">
                         ↕️ Sort: Recent
                     </button>
                 </div>
@@ -276,6 +283,65 @@ export default function ProjectsPage() {
                                 </button>
                                 <button type="submit" className="btn btn-primary">
                                     {editingProject ? 'Save Changes' : 'Create'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Org Edit Modal */}
+            {showOrgEditModal && (
+                <div className="modal-overlay" onClick={() => setShowOrgEditModal(false)}>
+                    <div className="modal" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h2 className="modal-title">Edit Organization</h2>
+                            <button className="modal-close" onClick={() => setShowOrgEditModal(false)}>
+                                ✕
+                            </button>
+                        </div>
+                        <form onSubmit={async (e) => {
+                            e.preventDefault();
+                            if (!orgId) return;
+                            await supabase
+                                .from('organizations')
+                                .update(orgFormData)
+                                .eq('id', orgId);
+                            setOrganization(prev => prev ? { ...prev, ...orgFormData } : null);
+                            setShowOrgEditModal(false);
+                        }}>
+                            <div className="input-group">
+                                <label className="input-label">Name</label>
+                                <input
+                                    type="text"
+                                    className="input"
+                                    placeholder="Organization name"
+                                    value={orgFormData.name}
+                                    onChange={(e) => setOrgFormData({ ...orgFormData, name: e.target.value })}
+                                    required
+                                    autoFocus
+                                />
+                            </div>
+                            <div className="input-group mt-4">
+                                <label className="input-label">Description</label>
+                                <textarea
+                                    className="input"
+                                    placeholder="Brief description"
+                                    value={orgFormData.description}
+                                    onChange={(e) => setOrgFormData({ ...orgFormData, description: e.target.value })}
+                                    rows={3}
+                                />
+                            </div>
+                            <div className="modal-footer">
+                                <button
+                                    type="button"
+                                    className="btn btn-secondary"
+                                    onClick={() => setShowOrgEditModal(false)}
+                                >
+                                    Cancel
+                                </button>
+                                <button type="submit" className="btn btn-primary">
+                                    Save Changes
                                 </button>
                             </div>
                         </form>
