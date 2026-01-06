@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { formatDuration } from '../hooks/useTimeLogs';
 import type { Organization, Project, Task, ReportPeriod } from '../types';
+import { ClipboardListIcon, CheckCircleIcon, RefreshIcon, TimerIcon, ChartBarIcon, FolderIcon } from '../components/icons';
 
 interface ReportData {
     tasks: Task[];
@@ -218,7 +219,11 @@ export default function ReportsPage() {
                             onClick={generateReport}
                             disabled={!selectedOrg || isLoading}
                         >
-                            {isLoading ? <span className="loading-spinner" /> : '📊 Generate Report'}
+                            {isLoading ? <span className="loading-spinner" /> : (
+                                <>
+                                    <ChartBarIcon size={18} /> Generate Report
+                                </>
+                            )}
                         </button>
                     </div>
                 </div>
@@ -230,28 +235,36 @@ export default function ReportsPage() {
                     {/* Summary Cards */}
                     <div className="summary-grid">
                         <div className="summary-card">
-                            <div className="summary-icon">📋</div>
+                            <div className="summary-icon">
+                                <ClipboardListIcon size={24} />
+                            </div>
                             <div className="summary-content">
                                 <span className="summary-value">{summary.total}</span>
                                 <span className="summary-label">Total Tasks</span>
                             </div>
                         </div>
                         <div className="summary-card done">
-                            <div className="summary-icon">✅</div>
+                            <div className="summary-icon">
+                                <CheckCircleIcon size={24} />
+                            </div>
                             <div className="summary-content">
                                 <span className="summary-value">{summary.done}</span>
                                 <span className="summary-label">Completed</span>
                             </div>
                         </div>
                         <div className="summary-card progress">
-                            <div className="summary-icon">🔄</div>
+                            <div className="summary-icon">
+                                <RefreshIcon size={24} />
+                            </div>
                             <div className="summary-content">
                                 <span className="summary-value">{summary.inProgress}</span>
                                 <span className="summary-label">In Progress</span>
                             </div>
                         </div>
                         <div className="summary-card time">
-                            <div className="summary-icon">⏱️</div>
+                            <div className="summary-icon">
+                                <TimerIcon size={24} />
+                            </div>
                             <div className="summary-content">
                                 <span className="summary-value">{formatDuration(summary.totalTime)}</span>
                                 <span className="summary-label">Time Logged</span>
@@ -294,7 +307,9 @@ export default function ReportsPage() {
                                         return (
                                             <tr key={projectId}>
                                                 <td className="project-name-cell">
-                                                    <span className="project-icon">📁</span>
+                                                    <span className="project-icon">
+                                                        <FolderIcon size={16} />
+                                                    </span>
                                                     {project?.name || 'Unknown'}
                                                 </td>
                                                 <td>{data.total}</td>
@@ -317,7 +332,9 @@ export default function ReportsPage() {
             {/* Empty state */}
             {!reportData && !isLoading && (
                 <div className="empty-state">
-                    <div className="empty-state-icon">📊</div>
+                    <div className="empty-state-icon">
+                        <ChartBarIcon size={48} />
+                    </div>
                     <h3 className="empty-state-title">Generate a Report</h3>
                     <p className="empty-state-description">
                         Select an organization and time period, then click Generate Report
@@ -346,6 +363,12 @@ export default function ReportsPage() {
           display: flex;
           align-items: flex-end;
         }
+        
+        .filter-action .btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
 
         .summary-grid {
           display: grid;
@@ -372,19 +395,22 @@ export default function ReportsPage() {
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 1.5rem;
+          color: var(--color-gray-600);
         }
 
         .summary-card.done .summary-icon {
           background: var(--color-success-light);
+          color: var(--color-success);
         }
 
         .summary-card.progress .summary-icon {
           background: var(--color-info-light);
+          color: var(--color-info);
         }
 
         .summary-card.time .summary-icon {
           background: var(--color-primary-100);
+          color: var(--color-primary-600);
         }
 
         .summary-content {

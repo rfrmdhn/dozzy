@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useProjects } from '../hooks/useProjects';
 import { supabase } from '../lib/supabase';
 import type { ProjectInput, Organization } from '../types';
-import { BuildingIcon, CalendarIcon, UsersIcon, EditIcon, FolderIcon, PlusIcon, FilterIcon, SortIcon, SearchIcon, GridIcon, ListIcon } from '../components/icons';
+import { BuildingIcon, CalendarIcon, UsersIcon, EditIcon, FolderIcon, PlusIcon, FilterIcon, SortIcon, SearchIcon, GridIcon, ListIcon, TrashIcon } from '../components/icons';
 
 export default function ProjectsPage() {
     const { orgId } = useParams<{ orgId: string }>();
@@ -224,20 +224,20 @@ export default function ProjectsPage() {
 
                                 <div className="project-card-footer">
                                     <div className="project-card-date">
-                                        📅 {project.end_date ? new Date(project.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'No due date'}
+                                        <CalendarIcon size={14} /> {project.end_date ? new Date(project.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'No due date'}
                                     </div>
                                     <div className="project-card-actions" onClick={(e) => e.stopPropagation()}>
                                         <button
                                             className="btn btn-ghost btn-sm"
                                             onClick={(e) => handleEdit(project, e)}
                                         >
-                                            ✏️
+                                            <EditIcon size={16} />
                                         </button>
                                         <button
                                             className="btn btn-ghost btn-sm"
                                             onClick={(e) => handleDelete(project.id, e)}
                                         >
-                                            🗑️
+                                            <TrashIcon size={16} />
                                         </button>
                                     </div>
                                 </div>
@@ -247,7 +247,9 @@ export default function ProjectsPage() {
 
                     {/* Add New Project Card */}
                     <div className="project-card add-new" onClick={() => setShowModal(true)}>
-                        <div className="add-new-icon">+</div>
+                        <div className="add-new-icon">
+                            <PlusIcon size={24} />
+                        </div>
                         <div className="add-new-text">Create New Project</div>
                         <div className="add-new-subtext">Start a new initiative</div>
                     </div>
