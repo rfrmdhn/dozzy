@@ -26,7 +26,7 @@ try {
 
     const env = parseEnv(envContent);
     const url = env.VITE_SUPABASE_URL;
-    const key = env.VITE_SUPABASE_ANON_KEY;
+    const key = env.VITE_SUPABASE_ANON;
 
     if (!url || !key) {
         console.error('Missing URL or Key in .env');
