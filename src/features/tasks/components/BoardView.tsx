@@ -1,6 +1,6 @@
 import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-pangea/dnd';
-import { type Task, type TaskStatus, type TaskPriority } from '../../types';
-import { CalendarIcon, ClockIcon, FlagIcon } from '../icons';
+import { type Task, type TaskStatus, type TaskPriority } from '../../../types';
+import { CalendarIcon, ClockIcon, FlagIcon } from '../../../components/icons';
 
 interface BoardViewProps {
     tasks: Task[];

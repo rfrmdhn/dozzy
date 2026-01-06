@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../lib/supabase';
-import type { Organization, OrganizationInput } from '../types';
-import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../../../lib/supabase';
+import type { Organization, OrganizationInput } from '../../../types';
+import { useAuth } from '../../../contexts/AuthContext';
 
 interface UseOrganizationsReturn {
     organizations: Organization[];

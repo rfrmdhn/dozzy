@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../lib/supabase';
-import type { Task, TaskInput, TaskStatus } from '../types';
+import { supabase } from '../../../lib/supabase';
+import type { Task, TaskInput, TaskStatus } from '../../../types';
 
 interface UseTasksReturn {
     tasks: Task[];

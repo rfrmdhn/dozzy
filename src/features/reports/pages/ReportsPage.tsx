@@ -1,9 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
-import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
-import { formatDuration } from '../hooks/useTimeLogs';
-import type { Organization, Project, Task, ReportPeriod } from '../types';
-import { ClipboardListIcon, CheckCircleIcon, RefreshIcon, TimerIcon, ChartBarIcon, FolderIcon } from '../components/icons';
+import { supabase } from '../../../lib/supabase';
+import { useAuth } from '../../../contexts/AuthContext';
+import { formatDuration } from '../../tasks/hooks/useTimeLogs';
+import type { Organization, Project, Task, ReportPeriod } from '../../../types';
+import { ClipboardListIcon, CheckCircleIcon, RefreshIcon, TimerIcon, ChartBarIcon, FolderIcon } from '../../../components/icons';
 
 interface ReportData {
     tasks: Task[];

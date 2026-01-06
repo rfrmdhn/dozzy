@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { useTimeLogs, formatDuration } from '../../hooks/useTimeLogs';
-import type { Task } from '../../types';
-import { CloseIcon, TrashIcon } from '../icons';
+import { useTimeLogs, formatDuration } from '../hooks/useTimeLogs';
+import type { Task } from '../../../types';
+import { CloseIcon, TrashIcon } from '../../../components/icons';
 
 interface TimeLogModalProps {
     task: Task;

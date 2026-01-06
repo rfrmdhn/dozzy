@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useProjects } from '../hooks/useProjects';
-import { supabase } from '../lib/supabase';
-import type { ProjectInput, Organization } from '../types';
-import { BuildingIcon, CalendarIcon, UsersIcon, EditIcon, FolderIcon, PlusIcon, FilterIcon, SortIcon, SearchIcon, GridIcon, ListIcon, TrashIcon } from '../components/icons';
+import { supabase } from '../../../lib/supabase';
+import type { ProjectInput, Organization } from '../../../types';
+import { BuildingIcon, CalendarIcon, UsersIcon, EditIcon, FolderIcon, PlusIcon, FilterIcon, SortIcon, SearchIcon, GridIcon, ListIcon, TrashIcon } from '../../../components/icons';
 
 export default function ProjectsPage() {
     const { orgId } = useParams<{ orgId: string }>();

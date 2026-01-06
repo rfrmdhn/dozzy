@@ -1,16 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTasks } from '../hooks/useTasks';
-import { supabase } from '../lib/supabase';
-import type { Task, TaskInput, Project, Organization } from '../types';
-import { SortIcon, PlusIcon, CloseIcon } from '../components/icons';
-import { BoardView } from '../components/tasks/BoardView';
-import { ListView } from '../components/tasks/ListView';
-import { TasksToolbar } from '../components/tasks/TasksToolbar';
-import { ProjectHeader } from '../components/tasks/ProjectHeader';
-import { TaskModal } from '../components/tasks/TaskModal';
-import { TimeLogModal } from '../components/tasks/TimeLogModal';
-import './TasksPage.css';
+import { supabase } from '../../../lib/supabase';
+import type { Task, TaskInput, Project, Organization } from '../../../types';
+import { SortIcon, PlusIcon, CloseIcon } from '../../../components/icons';
+import { BoardView } from '../components/BoardView';
+import { ListView } from '../components/ListView';
+import { TasksToolbar } from '../components/TasksToolbar';
+import { ProjectHeader } from '../components/ProjectHeader';
+import { TaskModal } from '../components/TaskModal';
+import { TimeLogModal } from '../components/TimeLogModal';
+import '../styles/TasksPage.css';
 
 export default function TasksPage() {
     const { projectId } = useParams<{ projectId: string }>();

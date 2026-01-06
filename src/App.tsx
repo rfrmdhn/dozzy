@@ -2,12 +2,12 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/layout/ProtectedRoute';
 import MainLayout from './components/layout/MainLayout';
-import LoginPage from './pages/LoginPage';
-import DashboardPage from './pages/DashboardPage';
-import ProjectsPage from './pages/ProjectsPage';
-import TasksPage from './pages/TasksPage';
-import ReportsPage from './pages/ReportsPage';
-import SettingsPage from './pages/SettingsPage';
+import LoginPage from './features/auth/pages/LoginPage';
+import DashboardPage from './features/dashboard/pages/DashboardPage';
+import ProjectsPage from './features/projects/pages/ProjectsPage';
+import TasksPage from './features/tasks/pages/TasksPage';
+import ReportsPage from './features/reports/pages/ReportsPage';
+import SettingsPage from './features/settings/pages/SettingsPage';
 
 function App() {
   return (

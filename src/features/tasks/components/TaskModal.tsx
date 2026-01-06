@@ -1,5 +1,5 @@
-import type { TaskInput, TaskStatus, TaskPriority } from '../../types';
-import { CloseIcon } from '../icons';
+import type { TaskInput, TaskStatus, TaskPriority } from '../../../types';
+import { CloseIcon } from '../../../components/icons';
 
 interface TaskModalProps {
     isOpen: boolean;

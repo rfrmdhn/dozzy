@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../lib/supabase';
-import type { Project, ProjectInput } from '../types';
+import { supabase } from '../../../lib/supabase';
+import type { Project, ProjectInput } from '../../../types';
 
 interface UseProjectsReturn {
     projects: Project[];

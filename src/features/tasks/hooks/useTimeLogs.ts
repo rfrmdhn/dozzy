@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../lib/supabase';
-import type { TimeLog, TimeLogInput } from '../types';
+import { supabase } from '../../../lib/supabase';
+import type { TimeLog, TimeLogInput } from '../../../types';
 
 interface UseTimeLogsReturn {
     timeLogs: TimeLog[];
