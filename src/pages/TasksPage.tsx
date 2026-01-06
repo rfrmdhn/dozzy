@@ -4,7 +4,9 @@ import { useTasks } from '../hooks/useTasks';
 import { useTimeLogs, formatDuration } from '../hooks/useTimeLogs';
 import { supabase } from '../lib/supabase';
 import type { Task, TaskInput, TaskStatus, TaskPriority, Project, Organization } from '../types';
-import { BuildingIcon, EditIcon, ShareIcon, SearchIcon, ListIcon, KanbanIcon, FilterIcon, SortIcon, PlusIcon, FlagIcon, CheckCircleIcon, CalendarIcon, ClockIcon, TrashIcon, CloseIcon } from '../components/icons';
+import { BuildingIcon, EditIcon, ShareIcon, SearchIcon, ListIcon, KanbanIcon, FilterIcon, SortIcon, PlusIcon, CloseIcon, ClockIcon, TrashIcon } from '../components/icons';
+import { BoardView } from '../components/tasks/BoardView';
+import { ListView } from '../components/tasks/ListView';
 
 export default function TasksPage() {
     const { projectId } = useParams<{ projectId: string }>();
@@ -100,24 +102,6 @@ export default function TasksPage() {
         setShowTimeModal(true);
     };
 
-    const getStatusBadgeClass = (status: TaskStatus) => {
-        switch (status) {
-            case 'todo': return 'badge-todo';
-            case 'in_progress': return 'badge-in-progress';
-            case 'done': return 'badge-done';
-            default: return '';
-        }
-    };
-
-    const getPriorityIcon = (priority: TaskPriority) => {
-        const colors: Record<string, string> = {
-            high: 'var(--color-error)',
-            medium: 'var(--color-warning)',
-            low: 'var(--color-success)'
-        };
-        return <FlagIcon size={14} style={{ color: colors[priority] || 'var(--color-gray-400)' }} />;
-    };
-
     const handleShare = () => {
         const url = window.location.href;
         navigator.clipboard.writeText(url);
@@ -211,14 +195,14 @@ export default function TasksPage() {
                 </div>
             </div>
 
-            {/* Tasks Table */}
+            {/* Tasks View */}
             {isLoading ? (
                 <div className="empty-state">
                     <div className="loading-spinner" />
                 </div>
             ) : filteredTasks.length === 0 ? (
                 <div className="empty-state">
-                    <div className="empty-state-icon"><CheckCircleIcon size={48} /></div>
+                    <div className="empty-state-icon"><SortIcon size={48} /></div>
                     <h3 className="empty-state-title">
                         {searchQuery ? 'No tasks found' : 'No tasks yet'}
                     </h3>
@@ -233,105 +217,21 @@ export default function TasksPage() {
                         </button>
                     )}
                 </div>
+            ) : viewMode === 'list' ? (
+                <ListView
+                    tasks={filteredTasks}
+                    onUpdateStatus={updateStatus}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                    onLogTime={handleOpenTimeLog}
+                />
             ) : (
-                <div className="table-container">
-                    <table className="table">
-                        <thead>
-                            <tr>
-                                <th style={{ width: '40px' }}></th>
-                                <th>Task Name</th>
-                                <th style={{ width: '120px' }}>Status</th>
-                                <th style={{ width: '100px' }}>Priority</th>
-                                <th style={{ width: '120px' }}>Labels</th>
-                                <th style={{ width: '140px' }}>Due Date</th>
-                                <th style={{ width: '80px' }}></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {filteredTasks.map((task) => (
-                                <tr key={task.id}>
-                                    <td>
-                                        <input
-                                            type="checkbox"
-                                            checked={task.status === 'done'}
-                                            onChange={(e) =>
-                                                updateStatus(task.id, e.target.checked ? 'done' : 'todo')
-                                            }
-                                            className="task-checkbox"
-                                        />
-                                    </td>
-                                    <td>
-                                        <span className={`task-row-title ${task.status === 'done' ? 'completed' : ''}`}>
-                                            {task.title}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <span className={`badge ${getStatusBadgeClass(task.status)}`}>
-                                            {task.status === 'todo'
-                                                ? 'To Do'
-                                                : task.status === 'in_progress'
-                                                    ? 'In Progress'
-                                                    : 'Done'}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <span className={`priority-indicator priority-${task.priority}`}>
-                                            {getPriorityIcon(task.priority)} {task.priority}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        {task.labels?.slice(0, 2).map((label, i) => (
-                                            <span key={i} className="label-badge">#{label}</span>
-                                        ))}
-                                    </td>
-                                    <td>
-                                        {task.due_date && (
-                                            <span className="due-date">
-                                                <CalendarIcon size={14} /> {new Date(task.due_date).toLocaleDateString('en-US', {
-                                                    month: 'short',
-                                                    day: 'numeric',
-                                                    year: 'numeric',
-                                                })}
-                                            </span>
-                                        )}
-                                    </td>
-                                    <td>
-                                        <div className="row-actions">
-                                            <button
-                                                className="btn btn-ghost btn-sm"
-                                                onClick={() => handleOpenTimeLog(task)}
-                                                title="Log time"
-                                            >
-                                                <ClockIcon size={16} />
-                                            </button>
-                                            <button
-                                                className="btn btn-ghost btn-sm"
-                                                onClick={() => handleEdit(task)}
-                                                title="Edit"
-                                            >
-                                                <EditIcon size={16} />
-                                            </button>
-                                            <button
-                                                className="btn btn-ghost btn-sm"
-                                                onClick={() => handleDelete(task.id)}
-                                                title="Delete"
-                                            >
-                                                <TrashIcon size={16} />
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                    <div className="table-footer">
-                        <span>Showing {filteredTasks.length} of {tasks.length} tasks</span>
-                        <div className="pagination">
-                            <button className="btn btn-secondary btn-sm" disabled>Previous</button>
-                            <button className="btn btn-secondary btn-sm" disabled>Next</button>
-                        </div>
-                    </div>
-                </div>
+                <BoardView
+                    tasks={filteredTasks}
+                    onUpdateStatus={updateStatus}
+                    onEdit={handleEdit}
+                    onLogTime={handleOpenTimeLog}
+                />
             )}
 
             {/* Task Modal */}
@@ -598,18 +498,8 @@ export default function TasksPage() {
           gap: var(--space-3);
         }
 
-
-
         .project-progress {
           margin-bottom: var(--space-8);
-        }
-
-        .progress-header {
-          display: flex;
-          justify-content: space-between;
-          margin-bottom: var(--space-2);
-          font-size: var(--font-size-sm);
-          color: var(--color-gray-600);
         }
 
         .progress-header {
@@ -654,18 +544,6 @@ export default function TasksPage() {
           width: 300px;
         }
 
-        .search-box {
-          position: relative;
-          width: 300px;
-        }
-
-        .search-icon {
-          position: absolute;
-          left: var(--space-3);
-          top: 50%;
-          transform: translateY(-50%);
-        }
-
         .search-icon {
           position: absolute;
           left: var(--space-3);
@@ -688,11 +566,6 @@ export default function TasksPage() {
           outline: none;
           border-color: var(--color-primary-500);
           box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-        }
-
-        .toolbar-actions {
-          display: flex;
-          gap: var(--space-2);
         }
 
         .toolbar-actions {
@@ -726,13 +599,6 @@ export default function TasksPage() {
 
         .priority-indicator.priority-low {
           color: var(--color-gray-500);
-        }
-
-
-
-        .due-date {
-          font-size: var(--font-size-sm);
-          color: var(--color-gray-600);
         }
 
         .due-date {
@@ -783,15 +649,6 @@ export default function TasksPage() {
 
           .tasks-toolbar {
             flex-direction: column;
-          }
-
-          .tasks-toolbar {
-
-            flex-direction: column;
-          }
-
-          .search-box {
-            max-width: none;
           }
 
           .search-box {
@@ -864,17 +721,17 @@ function TimeLogModal({ task, onClose }: { task: Task; onClose: () => void }) {
                             onChange={(e) => setNotes(e.target.value)}
                         />
                         <input
-                            type="time"
+                            type="datetime-local"
                             className="input"
-                            value={startTime.split('T')[1]?.substring(0, 5) || ''}
-                            onChange={(e) => setStartTime(`${new Date().toISOString().split('T')[0]}T${e.target.value}`)}
+                            value={startTime}
+                            onChange={(e) => setStartTime(e.target.value)}
                             required
                         />
                         <input
-                            type="time"
+                            type="datetime-local"
                             className="input"
-                            value={endTime.split('T')[1]?.substring(0, 5) || ''}
-                            onChange={(e) => setEndTime(`${new Date().toISOString().split('T')[0]}T${e.target.value}`)}
+                            value={endTime}
+                            onChange={(e) => setEndTime(e.target.value)}
                             required
                         />
                         <button type="submit" className="btn btn-primary">Log</button>
