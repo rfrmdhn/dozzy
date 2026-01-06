@@ -14,7 +14,7 @@ import './TasksPage.css';
 
 export default function TasksPage() {
     const { projectId } = useParams<{ projectId: string }>();
-    const { tasks, isLoading, create, update, updateStatus, remove } = useTasks(projectId);
+    const { tasks, isLoading, error, create, update, updateStatus, remove } = useTasks(projectId);
     const [project, setProject] = useState<Project | null>(null);
     const [_organization, setOrganization] = useState<Organization | null>(null);
     const [showModal, setShowModal] = useState(false);
@@ -142,7 +142,23 @@ export default function TasksPage() {
             />
 
             {/* Tasks View */}
-            {isLoading ? (
+            {error ? (
+                <div className="empty-state">
+                    <div className="empty-state-icon" style={{ color: 'var(--color-error)' }}>
+                        <CloseIcon size={48} />
+                    </div>
+                    <h3 className="empty-state-title text-error">Failed to load tasks</h3>
+                    <p className="empty-state-description">
+                        {error.message || 'There was an error loading your tasks. Please try again.'}
+                    </p>
+                    <button className="btn btn-secondary" onClick={() => window.location.reload()}>
+                        Retry
+                    </button>
+                    <div style={{ marginTop: '1rem', fontSize: '0.75rem', color: 'var(--color-gray-500)' }}>
+                        <p>Note: Ensure you have configured your .env file with valid Supabase credentials.</p>
+                    </div>
+                </div>
+            ) : isLoading ? (
                 <div className="empty-state">
                     <div className="loading-spinner" />
                 </div>

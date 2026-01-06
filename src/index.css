@@ -730,8 +730,9 @@ select.input {
   display: flex;
   flex-direction: column;
   position: sticky;
-  top: 0;
-  height: 100vh;
+  top: 56px; /* Below TopBar */
+  height: calc(100vh - 56px);
+  z-index: 90;
 }
 
 .sidebar-header {
