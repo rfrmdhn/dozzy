@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useOrganizations } from '../hooks/useOrganizations';
 import { useProjects } from '../hooks/useProjects';
 import { supabase } from '../../../lib/supabase';
 import type { ProjectInput, Organization } from '../../../types';
@@ -10,16 +11,18 @@ export default function ProjectsPage() {
     const { orgId } = useParams<{ orgId: string }>();
     const navigate = useNavigate();
     const { projects, isLoading, create, update, remove } = useProjects(orgId);
+    const { organizations } = useOrganizations();
     const [organization, setOrganization] = useState<Organization | null>(null);
     const [showModal, setShowModal] = useState(false);
     const [showOrgEditModal, setShowOrgEditModal] = useState(false);
     const [editingProject, setEditingProject] = useState<string | null>(null);
     const [orgFormData, setOrgFormData] = useState({ name: '', description: '' });
-    const [formData, setFormData] = useState<Omit<ProjectInput, 'organization_id'>>({
+    const [formData, setFormData] = useState<ProjectInput>({
         name: '',
         description: '',
         start_date: '',
         end_date: '',
+        organization_id: '',
     });
     const [searchQuery, setSearchQuery] = useState('');
     const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -49,7 +52,12 @@ export default function ProjectsPage() {
         if (editingProject) {
             await update(editingProject, formData);
         } else {
-            await create({ ...formData, organization_id: orgId });
+            const orgIdToUse = orgId || formData.organization_id;
+            if (!orgIdToUse) {
+                alert('Please select an organization');
+                return;
+            }
+            await create({ ...formData, organization_id: orgIdToUse });
         }
         handleCloseModal();
     };
@@ -60,6 +68,7 @@ export default function ProjectsPage() {
         description: string | null;
         start_date: string | null;
         end_date: string | null;
+        organization_id: string;
     }, e: React.MouseEvent) => {
         e.stopPropagation();
         setEditingProject(project.id);
@@ -68,6 +77,7 @@ export default function ProjectsPage() {
             description: project.description || '',
             start_date: project.start_date || '',
             end_date: project.end_date || '',
+            organization_id: project.organization_id,
         });
         setShowModal(true);
     };
@@ -82,7 +92,8 @@ export default function ProjectsPage() {
     const handleCloseModal = () => {
         setShowModal(false);
         setEditingProject(null);
-        setFormData({ name: '', description: '', start_date: '', end_date: '' });
+        setEditingProject(null);
+        setFormData({ name: '', description: '', start_date: '', end_date: '', organization_id: '' });
     };
 
     return (
@@ -100,23 +111,29 @@ export default function ProjectsPage() {
                     <BuildingIcon size={32} />
                 </div>
                 <div className="org-header-content">
-                    <h1 className="org-header-title">{organization?.name || 'Organization'}</h1>
-                    {organization?.description && (
-                        <p className="org-header-description">{organization.description}</p>
+                    <h1 className="org-header-title">{orgId ? (organization?.name || 'Organization') : 'All Projects'}</h1>
+                    {orgId ? (
+                        organization?.description && (
+                            <p className="org-header-description">{organization.description}</p>
+                        )
+                    ) : (
+                        <p className="org-header-description">Overview of all your projects across organizations</p>
                     )}
                     <div className="org-header-meta">
-                        <span><CalendarIcon size={14} /> Created {organization?.created_at ? new Date(organization.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''}</span>
+                        {orgId && <span><CalendarIcon size={14} /> Created {organization?.created_at ? new Date(organization.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''}</span>}
                         <span><UsersIcon size={14} /> {projects.length} Projects</span>
                     </div>
                 </div>
-                <button className="btn btn-secondary" onClick={() => {
-                    if (organization) {
-                        setOrgFormData({ name: organization.name, description: organization.description || '' });
-                        setShowOrgEditModal(true);
-                    }
-                }}>
-                    <EditIcon size={16} /> Edit Org
-                </button>
+                {orgId && (
+                    <button className="btn btn-secondary" onClick={() => {
+                        if (organization) {
+                            setOrgFormData({ name: organization.name, description: organization.description || '' });
+                            setShowOrgEditModal(true);
+                        }
+                    }}>
+                        <EditIcon size={16} /> Edit Org
+                    </button>
+                )}
             </div>
 
             {/* Search Bar */}
@@ -199,6 +216,11 @@ export default function ProjectsPage() {
                                     <div className="project-card-icon"><FolderIcon size={24} /></div>
                                     <div className="project-card-info">
                                         <h3 className="project-card-name">{project.name}</h3>
+                                        {!orgId && (
+                                            <span className="text-xs text-gray-500 block mb-1">
+                                                {(project as any).organizations?.name || 'Unknown Org'}
+                                            </span>
+                                        )}
                                         <span className="project-card-category">{project.description || 'No description'}</span>
                                     </div>
                                     <span className={`badge ${progress > 50 ? 'badge-active' : 'badge-draft'}`}>
@@ -282,6 +304,23 @@ export default function ProjectsPage() {
                                     autoFocus
                                 />
                             </div>
+
+                            {!orgId && (
+                                <div className="input-group mt-4">
+                                    <label className="input-label">Organization</label>
+                                    <select
+                                        className="input"
+                                        value={formData.organization_id}
+                                        onChange={(e) => setFormData({ ...formData, organization_id: e.target.value })}
+                                        required
+                                    >
+                                        <option value="">Select an organization</option>
+                                        {organizations.map(org => (
+                                            <option key={org.id} value={org.id}>{org.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
                             <div className="input-group mt-4">
                                 <label className="input-label">Description</label>
                                 <textarea

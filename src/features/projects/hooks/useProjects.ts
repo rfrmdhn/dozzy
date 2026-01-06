@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../../lib/supabase';
 import type { Project, ProjectInput } from '../../../types';
+import { useAuth } from '../../../contexts/AuthContext';
 
 interface UseProjectsReturn {
     projects: Project[];
@@ -13,12 +14,13 @@ interface UseProjectsReturn {
 }
 
 export function useProjects(organizationId?: string): UseProjectsReturn {
+    const { user } = useAuth();
     const [projects, setProjects] = useState<Project[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
 
     const fetchProjects = useCallback(async () => {
-        if (!organizationId) {
+        if (!user) {
             setProjects([]);
             setIsLoading(false);
             return;
@@ -26,22 +28,31 @@ export function useProjects(organizationId?: string): UseProjectsReturn {
 
         try {
             setIsLoading(true);
-            const { data, error } = await supabase
+            let query = supabase
                 .from('projects')
-                .select('*')
-                .eq('organization_id', organizationId)
+                .select('*, organizations!inner(id, name, user_id)')
                 .order('created_at', { ascending: false });
+
+            if (organizationId) {
+                query = query.eq('organization_id', organizationId);
+            } else {
+                // Filter by user's organizations if no specific org is requested
+                query = query.eq('organizations.user_id', user.id);
+            }
+
+            const { data, error } = await query;
 
             if (error) throw error;
             setProjects(data || []);
             setError(null);
         } catch (err) {
+            console.error('Error fetching projects:', err);
             setError(err as Error);
             setProjects([]);
         } finally {
             setIsLoading(false);
         }
-    }, [organizationId]);
+    }, [organizationId, user]);
 
     useEffect(() => {
         fetchProjects();
