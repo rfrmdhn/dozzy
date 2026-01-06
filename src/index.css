@@ -721,6 +721,7 @@ select.input {
   display: grid;
   grid-template-columns: 240px 1fr;
   min-height: 100vh;
+  padding-top: 56px;
 }
 
 .sidebar {
@@ -730,7 +731,8 @@ select.input {
   display: flex;
   flex-direction: column;
   position: sticky;
-  top: 56px; /* Below TopBar */
+  top: 56px;
+  /* Below TopBar */
   height: calc(100vh - 56px);
   z-index: 90;
 }
@@ -848,6 +850,7 @@ select.input {
   background: var(--bg-primary);
   min-height: 100vh;
   overflow-y: auto;
+  grid-column: 2;
 }
 
 /* ============================================
@@ -1017,6 +1020,10 @@ select.input {
 
   .page-container {
     padding: var(--space-4);
+  }
+
+  .main-content {
+    grid-column: 1;
   }
 }
 
