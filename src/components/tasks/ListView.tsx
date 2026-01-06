@@ -1,4 +1,4 @@
-import { Task, TaskStatus, TaskPriority } from '../../types';
+import { type Task, type TaskStatus, type TaskPriority } from '../../types';
 import { CalendarIcon, ClockIcon, EditIcon, TrashIcon, FlagIcon } from '../icons';
 
 interface ListViewProps {
