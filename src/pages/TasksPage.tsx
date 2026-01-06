@@ -4,7 +4,7 @@ import { useTasks } from '../hooks/useTasks';
 import { useTimeLogs, formatDuration } from '../hooks/useTimeLogs';
 import { supabase } from '../lib/supabase';
 import type { Task, TaskInput, TaskStatus, TaskPriority, Project, Organization } from '../types';
-import { BuildingIcon, EditIcon, ShareIcon, SearchIcon, ListIcon, KanbanIcon, FilterIcon, SortIcon, PlusIcon, CloseIcon, ClockIcon, TrashIcon } from '../components/icons';
+import { BuildingIcon, EditIcon, ShareIcon, SearchIcon, ListIcon, KanbanIcon, FilterIcon, SortIcon, PlusIcon, CloseIcon, TrashIcon } from '../components/icons';
 import { BoardView } from '../components/tasks/BoardView';
 import { ListView } from '../components/tasks/ListView';
 
