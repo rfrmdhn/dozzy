@@ -102,7 +102,7 @@ export default function ProjectsPage() {
             <div className="breadcrumb">
                 <Link to="/">Home</Link>
                 <span className="breadcrumb-separator">›</span>
-                <span className="breadcrumb-current">{organization?.name || 'Organization'}</span>
+                <span className="breadcrumb-current">{orgId ? (organization?.name || 'Organization') : 'All Projects'}</span>
             </div>
 
             {/* Organization Header */}
