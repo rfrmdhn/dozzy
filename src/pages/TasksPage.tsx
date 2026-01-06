@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTasks } from '../hooks/useTasks';
 import { supabase } from '../lib/supabase';
-import type { Task, TaskInput, TaskStatus, TaskPriority, Project, Organization } from '../types';
+import type { Task, TaskInput, Project, Organization } from '../types';
 import { SortIcon, PlusIcon, CloseIcon } from '../components/icons';
 import { BoardView } from '../components/tasks/BoardView';
 import { ListView } from '../components/tasks/ListView';

@@ -42,7 +42,8 @@ import {
     ClipboardList,
     RefreshCw,
     Timer,
-    BarChart
+    BarChart,
+    FileText
 } from 'lucide-react';
 
 interface IconProps extends SVGProps<SVGSVGElement> {
@@ -56,124 +57,54 @@ function withIcon(IconComponent: React.ComponentType<any>) {
     );
 }
 
-// Dashboard icon
-export const DashboardIcon = withIcon(LayoutDashboard);
-
-// Organizations icon
-export const OrganizationsIcon = withIcon(Building2);
-
-// Reports icon
-export const ReportsIcon = withIcon(BarChart3);
-
-// Settings icon
+// GLOBAL ICONS
+export const GridIcon = withIcon(LayoutGrid);
+export const SearchIcon = withIcon(Search);
+export const BellIcon = withIcon(Bell);
+export const HelpCircleIcon = withIcon(Settings); // Placeholder
 export const SettingsIcon = withIcon(Settings);
-
-// Profile/User icon
-export const UserIcon = withIcon(User);
-
-// Users/Team icon
-export const UsersIcon = withIcon(Users);
-
-// Clock icon
+export const LayoutIcon = withIcon(LayoutDashboard);
+export const BriefcaseIcon = withIcon(Building2);
+export const ListIcon = withIcon(List);
+export const CalendarIcon = withIcon(Calendar);
+export const FileTextIcon = withIcon(FileText);
+export const KanbanIcon = withIcon(KanbanSquare);
+export const ChevronLeftIcon = withIcon(ChevronLeft);
+export const PlusIcon = withIcon(Plus);
+export const CheckCircleIcon = withIcon(CheckCircle2);
+export const LogOutIcon = withIcon(LogOut);
 export const ClockIcon = withIcon(Clock);
 
-// Calendar icon
-export const CalendarIcon = withIcon(Calendar);
-
-// Folder/Project icon
+// GENERIC ICONS
+export const DashboardIcon = withIcon(LayoutDashboard); // Alias for legacy
+export const OrganizationsIcon = withIcon(Building2);
+export const ReportsIcon = withIcon(BarChart3);
+export const UserIcon = withIcon(User);
+export const UsersIcon = withIcon(Users);
 export const FolderIcon = withIcon(Folder);
-
-// Check/Done icon
 export const CheckIcon = withIcon(Check);
-
-// Check Circle icon
-export const CheckCircleIcon = withIcon(CheckCircle2);
-
-// Flag/Priority icon
 export const FlagIcon = withIcon(Flag);
-
-// Filter icon
 export const FilterIcon = withIcon(Filter);
-
-// Sort icon
 export const SortIcon = withIcon(ArrowUpDown);
-
-// Grid view icon
-export const GridIcon = withIcon(LayoutGrid);
-
-// List view icon
-export const ListIcon = withIcon(List);
-
-// Plus icon
-export const PlusIcon = withIcon(Plus);
-
-// Edit/Pencil icon
 export const EditIcon = withIcon(Pencil);
-
-// Share icon
 export const ShareIcon = withIcon(Share2);
-
-// Search icon
-export const SearchIcon = withIcon(Search);
-
-// Bell/Notification icon
-export const BellIcon = withIcon(Bell);
-
-// Play icon
 export const PlayIcon = withIcon(Play);
-
-// Pause icon
 export const PauseIcon = withIcon(Pause);
-
-// Trash/Delete icon
 export const TrashIcon = withIcon(Trash2);
-
-// Close/X icon
 export const CloseIcon = withIcon(X);
-
-// Mail/Email icon
 export const MailIcon = withIcon(Mail);
-
-// Lock/Password icon
 export const LockIcon = withIcon(Lock);
-
-// Eye icon (show password)
 export const EyeIcon = withIcon(Eye);
-
-// Eye Off icon (hide password)
 export const EyeOffIcon = withIcon(EyeOff);
-
-// Building/Company icon
 export const BuildingIcon = withIcon(Building);
-
-// Chevron Right icon
 export const ChevronRightIcon = withIcon(ChevronRight);
-
-// Chevron Left icon
-export const ChevronLeftIcon = withIcon(ChevronLeft);
-
-// Chevron Down icon
 export const ChevronDownIcon = withIcon(ChevronDown);
-
-// More/Dots icon
 export const MoreIcon = withIcon(MoreHorizontal);
-
-// Star icon
 export const StarIcon = withIcon(Star);
-
-// Tag/Label icon
 export const TagIcon = withIcon(Tag);
-
-// Arrow Up icon
 export const ArrowUpIcon = withIcon(ArrowUp);
 
-// Log out icon
-export const LogOutIcon = withIcon(LogOut);
-
-// Kanban/Board icon
-export const KanbanIcon = withIcon(KanbanSquare);
-
-// New Icons Replacing Emojis
+// REPORTS ICONS
 export const ClipboardListIcon = withIcon(ClipboardList);
 export const RefreshIcon = withIcon(RefreshCw);
 export const TimerIcon = withIcon(Timer);

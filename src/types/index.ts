@@ -28,20 +28,26 @@ export interface Project {
     description: string | null;
     start_date: string | null;
     end_date: string | null;
+    type: ProjectType;
     created_at: string;
     updated_at: string;
 }
 
+export type ProjectType = 'kanban' | 'list';
 export type TaskStatus = 'todo' | 'in_progress' | 'done';
 export type TaskPriority = 'low' | 'medium' | 'high';
+export type TaskType = 'task' | 'bug';
 
 export interface Task {
     id: string;
     project_id: string;
+    parent_id: string | null;
+    assignee_id: string | null;
     title: string;
     description: string | null;
     status: TaskStatus;
     priority: TaskPriority;
+    type: TaskType;
     labels: string[];
     due_date: string | null;
     created_at: string;
@@ -74,6 +80,7 @@ export interface ProjectInput {
     description?: string;
     start_date?: string;
     end_date?: string;
+    type?: ProjectType;
 }
 
 export interface TaskInput {
@@ -82,6 +89,9 @@ export interface TaskInput {
     description?: string;
     status?: TaskStatus;
     priority?: TaskPriority;
+    type?: TaskType;
+    parent_id?: string;
+    assignee_id?: string;
     labels?: string[];
     due_date?: string;
 }
