@@ -189,7 +189,6 @@ export default function ProjectsPage() {
                             progress={calculateProgress(project.tasks)}
                             onClick={() => navigate(`/projects/${project.id}/tasks`)}
                             onEdit={(e) => handleEdit(project, e)}
-                            onManageMembers={(e) => handleManageMembers(project, e)}
                             onDelete={(e) => handleDelete(project.id, e)}
                             showOrgName={!orgId}
                         />

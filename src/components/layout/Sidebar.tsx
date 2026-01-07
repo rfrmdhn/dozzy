@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { NavLink, useParams, useLocation, Link } from 'react-router-dom';
+import { NavLink, useParams, Link } from 'react-router-dom';
 import {
     LayoutIcon,
     ListIcon,
@@ -7,13 +7,13 @@ import {
     FileTextIcon,
     SettingsIcon,
     KanbanIcon,
-    BriefcaseIcon,
     ClockIcon,
     ChevronDownIcon,
     ChevronRightIcon,
     BuildingIcon,
     FolderIcon,
-    PlusIcon
+    PlusIcon,
+    UsersIcon
 } from '../atoms/icons';
 import { useOrganizations } from '../../features/projects/hooks/useOrganizations';
 import { useProjects } from '../../features/projects/hooks/useProjects';
@@ -22,7 +22,6 @@ import './styles/Sidebar.css';
 
 export default function Sidebar() {
     const { projectId } = useParams();
-    const location = useLocation();
     const { organizations } = useOrganizations();
     const { projects } = useProjects();
 

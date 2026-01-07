@@ -1,17 +1,10 @@
 import { useState } from 'react';
 import { Badge, Button, Modal } from '../../../components';
-import type { Project, User } from '../../../types';
+import type { Project } from '../../../types';
 import { useProjectMembers } from '../hooks/useProjectMembers';
 import { useOrganizationMembers } from '../hooks/useOrganizationMembers';
 
 // Simplified icons since they are not exported from atoms/index
-const XIcon = ({ size = 20 }: { size?: number }) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <line x1="18" y1="6" x2="6" y2="18"></line>
-        <line x1="6" y1="6" x2="18" y2="18"></line>
-    </svg>
-);
-
 const TrashIcon = ({ size = 20 }: { size?: number }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <polyline points="3 6 5 6 21 6"></polyline>

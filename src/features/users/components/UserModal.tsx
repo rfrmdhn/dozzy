@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Modal, Input, Select, Button, Badge } from '../../../components';
+import { Modal, Input, Select, Button } from '../../../components';
 import { useProjects } from '../../projects/hooks/useProjects';
 import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../../contexts/AuthContext';
-import { Check, X, AlertCircle } from 'lucide-react';
+import { Check, AlertCircle } from 'lucide-react';
 import type { OrganizationMember, OrgRole } from '../../projects/hooks/useOrganizationMembers';
 
 interface UserModalProps {
@@ -181,11 +181,12 @@ export function UserModal({ isOpen, onClose, member, orgId, onSuccess }: UserMod
                                 <div
                                     key={project.id}
                                     className={`
-                                        flex items-center justify-between p-2 rounded cursor-pointer border
+                                        flex items - center justify - between p - 2 rounded cursor - pointer border
                                         ${selectedProjectIds.includes(project.id)
                                             ? 'bg-indigo-50 border-indigo-200'
-                                            : 'hover:bg-gray-50 border-transparent'}
-                                    `}
+                                            : 'hover:bg-gray-50 border-transparent'
+                                        }
+`}
                                     onClick={() => toggleProject(project.id)}
                                 >
                                     <span className="text-sm text-gray-900 truncate">{project.name}</span>

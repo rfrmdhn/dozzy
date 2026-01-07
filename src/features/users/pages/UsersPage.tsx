@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { useOrganizationMembers, OrganizationMember } from '../../projects/hooks/useOrganizationMembers';
+import { useOrganizationMembers } from '../../projects/hooks/useOrganizationMembers';
+import type { OrganizationMember } from '../../projects/hooks/useOrganizationMembers';
 import { UserModal } from '../components/UserModal';
 import { Button, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Badge } from '../../../components';
 import { PlusIcon, Edit2Icon, TrashIcon, UserIcon, UsersIcon } from 'lucide-react';
