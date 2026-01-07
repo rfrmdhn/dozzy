@@ -1,10 +1,7 @@
 import { useState } from 'react';
 import { useTimeLogs, formatDuration } from '../hooks/useTimeLogs';
 import type { Task } from '../../../types';
-import { TrashIcon } from '../../../components/atoms/icons';
-import { Modal } from '../../../components/molecules/Modal';
-import { Input } from '../../../components/molecules/Input';
-import { Button } from '../../../components/atoms/Button';
+import { TrashIcon, Modal, Input, Button } from '../../../components';
 
 interface TimeLogModalProps {
     task: Task;

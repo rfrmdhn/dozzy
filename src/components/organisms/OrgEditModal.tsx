@@ -1,6 +1,5 @@
-import { Modal } from '../molecules/Modal';
-import { Button } from '../atoms/Button';
-import { Input } from '../molecules/Input';
+import { Modal, Input } from '../molecules';
+import { Button } from '../atoms';
 import { useState, useEffect } from 'react';
 
 interface OrgEditModalProps {

@@ -1,5 +1,4 @@
-import { BuildingIcon, CalendarIcon, UsersIcon, EditIcon } from '../atoms/icons';
-import { Button } from '../atoms/Button';
+import { BuildingIcon, CalendarIcon, UsersIcon, EditIcon, Button } from '../atoms';
 import type { Organization } from '../../types';
 
 interface OrgHeaderProps {

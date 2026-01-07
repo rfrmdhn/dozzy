@@ -1,7 +1,5 @@
 import type { Dispatch, SetStateAction } from 'react';
-import { SearchIcon, ListIcon, KanbanIcon, FilterIcon, SortIcon, PlusIcon } from '../../../components/atoms/icons';
-import { Button } from '../../../components/atoms/Button';
-import { Input } from '../../../components/molecules/Input';
+import { SearchIcon, ListIcon, KanbanIcon, FilterIcon, SortIcon, PlusIcon, Button, Input } from '../../../components';
 
 interface TasksToolbarProps {
     searchQuery: string;

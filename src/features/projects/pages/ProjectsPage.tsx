@@ -4,16 +4,11 @@ import { useOrganizations } from '../hooks/useOrganizations';
 import { useProjects } from '../hooks/useProjects';
 import { supabase } from '../../../lib/supabase';
 import type { ProjectInput, Organization } from '../../../types';
-import { FolderIcon, PlusIcon } from '../../../components/atoms/icons';
+import { FolderIcon, PlusIcon } from '../../../components';
 import '../styles/ProjectsPage.css';
 
 // Components
-import { Button } from '../../../components/atoms/Button';
-import { OrgHeader } from '../../../components/organisms/OrgHeader';
-import { ProjectsToolbar } from '../../../components/organisms/ProjectsToolbar';
-import { ProjectCard } from '../../../components/organisms/ProjectCard';
-import { ProjectModal } from '../../../components/organisms/ProjectModal';
-import { OrgEditModal } from '../../../components/organisms/OrgEditModal';
+import { Button, OrgHeader, ProjectsToolbar, ProjectCard, ProjectModal, OrgEditModal } from '../../../components';
 
 export default function ProjectsPage() {
     const { orgId } = useParams<{ orgId: string }>();

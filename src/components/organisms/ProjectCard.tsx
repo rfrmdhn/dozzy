@@ -1,6 +1,4 @@
-import { FolderIcon, CalendarIcon, EditIcon, TrashIcon } from '../atoms/icons';
-import { Badge } from '../atoms/Badge';
-import { Button } from '../atoms/Button';
+import { FolderIcon, CalendarIcon, EditIcon, TrashIcon, Badge, Button } from '../atoms';
 
 interface ProjectCardProps {
     project: any; // Using any for now to avoid rapid type refactoring, ideally Project

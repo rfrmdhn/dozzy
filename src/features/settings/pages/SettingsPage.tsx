@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
-import { SettingsIcon, UserIcon, BellIcon, EyeIcon, LogOutIcon } from '../../../components/atoms/icons';
-import { Input } from '../../../components/molecules/Input';
+import { SettingsIcon, UserIcon, BellIcon, EyeIcon, LogOutIcon, Input } from '../../../components';
 import '../styles/SettingsPage.css';
 
 type SettingsTab = 'general' | 'notifications' | 'appearance';

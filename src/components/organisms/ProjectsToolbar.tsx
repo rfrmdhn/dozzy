@@ -1,6 +1,5 @@
-import { FilterIcon, SortIcon, SearchIcon, GridIcon, ListIcon, PlusIcon } from '../atoms/icons';
-import { Button } from '../atoms/Button';
-import { Input } from '../molecules/Input';
+import { FilterIcon, SortIcon, SearchIcon, GridIcon, ListIcon, PlusIcon, Button } from '../atoms';
+import { Input } from '../molecules';
 import { useState } from 'react';
 
 interface ProjectsToolbarProps {

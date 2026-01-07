@@ -1,7 +1,5 @@
-import { Modal } from '../molecules/Modal';
-import { Button } from '../atoms/Button';
-import { Input } from '../molecules/Input';
-import { Select } from '../molecules/Select';
+import { Modal, Input, Select } from '../molecules';
+import { Button } from '../atoms';
 import type { Organization, ProjectInput } from '../../types';
 
 interface ProjectModalProps {

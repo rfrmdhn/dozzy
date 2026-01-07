@@ -1,8 +1,6 @@
 import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-pangea/dnd';
 import { type Task, type TaskStatus, type TaskPriority } from '../../../types';
-import { CalendarIcon, ClockIcon, FlagIcon } from '../../../components/atoms/icons';
-import { Button } from '../../../components/atoms/Button';
-import { Card } from '../../../components/atoms/Card';
+import { CalendarIcon, ClockIcon, FlagIcon, Button, Card } from '../../../components';
 import '../styles/BoardView.css';
 
 interface BoardViewProps {

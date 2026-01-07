@@ -1,9 +1,6 @@
 import type { TaskInput, TaskStatus, TaskPriority } from '../../../types';
 
-import { Modal } from '../../../components/molecules/Modal';
-import { Input } from '../../../components/molecules/Input';
-import { Select } from '../../../components/molecules/Select';
-import { Button } from '../../../components/atoms/Button';
+import { Modal, Input, Select, Button } from '../../../components';
 
 interface TaskModalProps {
     isOpen: boolean;

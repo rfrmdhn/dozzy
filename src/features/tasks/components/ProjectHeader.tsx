@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom';
 import type { Project } from '../../../types';
-import { BuildingIcon, EditIcon, ShareIcon } from '../../../components/atoms/icons';
-import { Button } from '../../../components/atoms/Button';
+import { BuildingIcon, EditIcon, ShareIcon, Button } from '../../../components';
 
 interface ProjectHeaderProps {
     project: Project | null;
