@@ -170,13 +170,32 @@ CREATE POLICY "Users can update own profile" ON users FOR UPDATE USING (auth.uid
 -- ============================================
 -- Organization Members RLS Policies
 -- ============================================
+-- Allow users to view their own membership directly
+-- Also allow viewing other members if they belong to the same organization
+-- Helper function to avoid recursion in RLS
+CREATE OR REPLACE FUNCTION get_user_org_ids()
+RETURNS UUID[]
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+STABLE
+AS $$
+BEGIN
+  RETURN ARRAY(
+    SELECT organization_id
+    FROM organization_members
+    WHERE user_id = auth.uid()
+  );
+END;
+$$;
+
+-- Allow users to view their own membership directly
+-- Also allow viewing other members if they belong to the same organization
 CREATE POLICY "Org members can view member list" ON organization_members
   FOR SELECT USING (
-    EXISTS (
-      SELECT 1 FROM organization_members om
-      WHERE om.organization_id = organization_members.organization_id
-      AND om.user_id = auth.uid()
-    )
+    user_id = auth.uid()
+    OR
+    organization_id = ANY(get_user_org_ids())
   );
 
 CREATE POLICY "Admin/Editor can add members" ON organization_members
