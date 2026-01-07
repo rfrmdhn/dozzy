@@ -201,7 +201,7 @@ export function UserModal({ isOpen, onClose, member, orgId, onSuccess }: UserMod
                 )}
 
                 <div className="flex justify-end gap-2 pt-4">
-                    <Button variant="outline" onClick={onClose} type="button" disabled={isLoading}>
+                    <Button variant="ghost" onClick={onClose} type="button" disabled={isLoading}>
                         Cancel
                     </Button>
                     <Button type="submit" disabled={isLoading}>

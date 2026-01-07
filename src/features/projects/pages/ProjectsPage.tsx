@@ -98,10 +98,7 @@ export default function ProjectsPage() {
         setShowModal(true);
     };
 
-    const handleManageMembers = (project: any, e: React.MouseEvent) => {
-        e.stopPropagation();
-        setManagingProject(project);
-    };
+
 
     const handleDelete = async (id: string, e: React.MouseEvent) => {
         e.stopPropagation();
