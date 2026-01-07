@@ -4,7 +4,8 @@ import { useOrganizations } from '../../projects/hooks/useOrganizations';
 import { useAuth } from '../../../contexts/AuthContext';
 import { supabase } from '../../../lib/supabase';
 import type { OrganizationInput } from '../../../types';
-import { ClockIcon, BuildingIcon, CheckCircleIcon, EditIcon, TrashIcon, FolderIcon, PlusIcon, PlayIcon, PauseIcon, ArrowUpIcon, Button, Card, Input, Modal, Badge } from '../../../components';
+import { ClockIcon, BuildingIcon, CheckCircleIcon, FolderIcon, PlusIcon, PlayIcon, PauseIcon, ArrowUpIcon, Button, Card, Input, Modal, Badge } from '../../../components';
+import { OrganizationCard } from '../../../components/molecules';
 import '../styles/DashboardPage.css';
 
 // Types for dashboard data
@@ -404,47 +405,18 @@ export default function DashboardPage() {
                         ) : (
                             <div className="org-grid">
                                 {organizations.slice(0, 2).map((org, index) => (
-                                    <Card
+                                    <OrganizationCard
                                         key={org.id}
-                                        className="org-card"
+                                        id={org.id}
+                                        name={org.name}
+                                        description={org.description}
+                                        variant={index % 2 === 0 ? 'dark' : 'teal'}
+                                        projectCount={orgStats[org.id]?.projectCount || 0}
+                                        memberCount={orgStats[org.id]?.memberCount || 1}
                                         onClick={() => navigate(`/organizations/${org.id}/projects`)}
-                                    >
-                                        <div className={`org-card-image org-card-image--${index % 2 === 0 ? 'dark' : 'teal'}`}>
-                                            <div className="org-card-icon"><BuildingIcon size={24} /></div>
-                                        </div>
-                                        <div className="org-card-content">
-                                            <div className="org-card-name">{org.name}</div>
-                                            {org.description && (
-                                                <div className="org-card-description">{org.description}</div>
-                                            )}
-                                            <div className="org-card-meta">
-                                                <span className="org-card-meta-item">
-                                                    <span className="meta-dot meta-dot--success"></span>
-                                                    {orgStats[org.id]?.projectCount || 0} Projects
-                                                </span>
-                                                <span className="org-card-meta-item">
-                                                    <BuildingIcon size={12} />
-                                                    {orgStats[org.id]?.memberCount || 1} Member
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <div className="org-card-actions" onClick={(e) => e.stopPropagation()}>
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => handleEdit(org)}
-                                            >
-                                                <EditIcon size={16} />
-                                            </Button>
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={(e: React.MouseEvent) => handleDelete(org.id, e)}
-                                            >
-                                                <TrashIcon size={16} />
-                                            </Button>
-                                        </div>
-                                    </Card>
+                                        onEdit={() => handleEdit(org)}
+                                        onDelete={(e) => handleDelete(org.id, e)}
+                                    />
                                 ))}
                             </div>
                         )}
