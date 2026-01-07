@@ -30,15 +30,14 @@ export function useProjects(organizationId?: string): UseProjectsReturn {
             setIsLoading(true);
             let query = supabase
                 .from('projects')
-                .select('*, organizations!inner(id, name, user_id)')
+                .select('*, organizations(id, name)')
                 .order('created_at', { ascending: false });
 
             if (organizationId) {
                 query = query.eq('organization_id', organizationId);
-            } else {
-                // Filter by user's organizations if no specific org is requested
-                query = query.eq('organizations.user_id', user.id);
             }
+            // No need to manually filter by user_id, RLS handles it
+
 
             const { data, error } = await query;
 

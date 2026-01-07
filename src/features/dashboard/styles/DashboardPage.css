@@ -121,8 +121,9 @@
 /* Dashboard Content Grid */
 .dashboard-content-grid {
     display: grid;
-    grid-template-columns: 1fr 320px;
-    gap: var(--space-6);
+    grid-template-columns: 2fr 1fr;
+    gap: var(--space-4);
+    /* Match stats grid gap for better alignment */
 }
 
 .dashboard-main-content {
