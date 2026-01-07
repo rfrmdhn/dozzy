@@ -304,6 +304,24 @@ BEGIN
 END;
 $$;
 
+-- Helper function to check project membership without triggering RLS logic recursively
+-- Used inside Policy definitions to avoid infinite recursion
+CREATE OR REPLACE FUNCTION is_project_member(_project_id UUID)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+STABLE
+AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM project_members
+    WHERE project_id = _project_id
+    AND user_id = auth.uid()
+  );
+END;
+$$;
+
 -- Trigger to auto-add creator
 CREATE OR REPLACE FUNCTION handle_new_project_member()
 RETURNS TRIGGER AS $$
@@ -324,6 +342,23 @@ CREATE TRIGGER on_project_created
 -- Projects RLS Policies
 -- ============================================
 DROP POLICY IF EXISTS "Org members can view projects" ON projects;
+
+-- Project Members RLS Policy (Updated to avoid recursion)
+DROP POLICY IF EXISTS "Project members can view member list" ON project_members;
+CREATE POLICY "Project members can view member list" ON project_members
+  FOR SELECT USING (
+    -- Admin in Org
+    EXISTS (
+      SELECT 1 FROM projects p
+      JOIN organization_members om ON p.organization_id = om.organization_id
+      WHERE p.id = project_members.project_id
+      AND om.user_id = auth.uid()
+      AND om.role = 'admin'
+    )
+    OR
+    -- Member in Project (Using function to avoid recursion)
+    is_project_member(project_id)
+  );
 
 CREATE POLICY "Project Access Policy" ON projects
   FOR SELECT USING (

@@ -8,6 +8,7 @@ import { FolderIcon, PlusIcon } from '../../../components';
 import '../styles/ProjectsPage.css';
 
 // Components
+import { Button, OrgHeader, ProjectsToolbar, ProjectCard, ProjectModal, OrgEditModal } from '../../../components';
 import { ProjectMembersModal } from '../components/ProjectMembersModal';
 
 export default function ProjectsPage() {
