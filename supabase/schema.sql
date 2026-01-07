@@ -150,6 +150,7 @@ DROP POLICY IF EXISTS "Org members can view tasks" ON tasks;
 DROP POLICY IF EXISTS "Admin/Editor can manage tasks" ON tasks;
 DROP POLICY IF EXISTS "Admin/Editor can insert tasks" ON tasks;
 DROP POLICY IF EXISTS "Admin/Editor can update tasks" ON tasks;
+DROP POLICY IF EXISTS "Viewer can update task status" ON tasks;
 DROP POLICY IF EXISTS "Admin/Editor can delete tasks" ON tasks;
 -- Time Logs
 DROP POLICY IF EXISTS "Users can manage time logs for their tasks" ON time_logs;
@@ -316,6 +317,17 @@ CREATE POLICY "Admin/Editor can update tasks" ON tasks
       SELECT 1 FROM projects p
       JOIN organization_members om ON om.organization_id = p.organization_id
       WHERE p.id = tasks.project_id AND om.user_id = auth.uid() AND om.role IN ('admin', 'editor')
+    )
+  );
+
+-- Viewer can only update task status (handled at application level)
+-- RLS allows update if user is member, field restriction in app
+CREATE POLICY "Viewer can update task status" ON tasks
+  FOR UPDATE USING (
+    EXISTS (
+      SELECT 1 FROM projects p
+      JOIN organization_members om ON om.organization_id = p.organization_id
+      WHERE p.id = tasks.project_id AND om.user_id = auth.uid() AND om.role = 'viewer'
     )
   );
 

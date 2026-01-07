@@ -3,19 +3,26 @@ import { supabase } from '../../../lib/supabase';
 import type { Organization, OrganizationInput } from '../../../types';
 import { useAuth } from '../../../contexts/AuthContext';
 
+type OrgRole = 'admin' | 'editor' | 'viewer';
+
+interface OrganizationWithRole extends Organization {
+    role?: OrgRole;
+}
+
 interface UseOrganizationsReturn {
-    organizations: Organization[];
+    organizations: OrganizationWithRole[];
     isLoading: boolean;
     error: Error | null;
     create: (input: OrganizationInput) => Promise<Organization | null>;
     update: (id: string, input: Partial<OrganizationInput>) => Promise<boolean>;
     remove: (id: string) => Promise<boolean>;
     refresh: () => Promise<void>;
+    getUserRole: (orgId: string) => OrgRole | null;
 }
 
 export function useOrganizations(): UseOrganizationsReturn {
     const { user } = useAuth();
-    const [organizations, setOrganizations] = useState<Organization[]>([]);
+    const [organizations, setOrganizations] = useState<OrganizationWithRole[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
 
@@ -28,14 +35,37 @@ export function useOrganizations(): UseOrganizationsReturn {
 
         try {
             setIsLoading(true);
+
+            // Fetch organizations with user's role via organization_members
             const { data, error } = await supabase
-                .from('organizations')
-                .select('*')
+                .from('organization_members')
+                .select(`
+                    role,
+                    organization:organizations (
+                        id,
+                        name,
+                        description,
+                        created_at,
+                        updated_at
+                    )
+                `)
                 .eq('user_id', user.id)
                 .order('created_at', { ascending: false });
 
             if (error) throw error;
-            setOrganizations(data || []);
+
+            // Transform data to include role in organization object
+            const orgsWithRoles: OrganizationWithRole[] = (data || [])
+                .filter(item => item.organization)
+                .map(item => {
+                    const org = item.organization as unknown as Organization;
+                    return {
+                        ...org,
+                        role: item.role as OrgRole
+                    };
+                });
+
+            setOrganizations(orgsWithRoles);
             setError(null);
         } catch (err) {
             setError(err as Error);
@@ -54,17 +84,21 @@ export function useOrganizations(): UseOrganizationsReturn {
             if (!user) return null;
 
             try {
+                // Create organization (trigger will auto-add user as admin)
                 const { data, error } = await supabase
                     .from('organizations')
                     .insert({
-                        ...input,
-                        user_id: user.id,
+                        name: input.name,
+                        description: input.description,
                     })
                     .select()
                     .single();
 
                 if (error) throw error;
-                setOrganizations((prev) => [data, ...prev]);
+
+                // Add to local state with admin role
+                const orgWithRole: OrganizationWithRole = { ...data, role: 'admin' };
+                setOrganizations((prev) => [orgWithRole, ...prev]);
                 return data;
             } catch (err) {
                 setError(err as Error);
@@ -111,6 +145,11 @@ export function useOrganizations(): UseOrganizationsReturn {
         }
     }, []);
 
+    const getUserRole = useCallback((orgId: string): OrgRole | null => {
+        const org = organizations.find(o => o.id === orgId);
+        return org?.role || null;
+    }, [organizations]);
+
     return {
         organizations,
         isLoading,
@@ -119,6 +158,7 @@ export function useOrganizations(): UseOrganizationsReturn {
         update,
         remove,
         refresh: fetchOrganizations,
+        getUserRole,
     };
 }
 
