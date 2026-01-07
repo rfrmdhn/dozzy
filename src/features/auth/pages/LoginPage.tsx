@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { MailIcon, LockIcon, UserIcon, EyeIcon, EyeOffIcon, CheckIcon } from '../../../components/icons';
+import { MailIcon, LockIcon, UserIcon, EyeIcon, EyeOffIcon, CheckIcon } from '../../../components/atoms/icons';
 import '../styles/LoginPage.css';
 
 export default function LoginPage() {

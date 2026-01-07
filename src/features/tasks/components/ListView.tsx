@@ -1,5 +1,5 @@
 import { type Task, type TaskStatus, type TaskPriority } from '../../../types';
-import { CalendarIcon, ClockIcon, EditIcon, TrashIcon, FlagIcon } from '../../../components/icons';
+import { CalendarIcon, ClockIcon, EditIcon, TrashIcon, FlagIcon } from '../../../components/atoms/icons';
 
 interface ListViewProps {
     tasks: Task[];

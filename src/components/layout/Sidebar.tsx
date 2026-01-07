@@ -9,7 +9,7 @@ import {
     KanbanIcon,
     BriefcaseIcon,
     ClockIcon
-} from '../icons';
+} from '../atoms/icons';
 import './styles/Sidebar.css';
 
 export default function Sidebar() {

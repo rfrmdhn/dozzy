@@ -4,7 +4,7 @@ import { useOrganizations } from '../../projects/hooks/useOrganizations';
 import { useAuth } from '../../../contexts/AuthContext';
 import { supabase } from '../../../lib/supabase';
 import type { OrganizationInput } from '../../../types';
-import { ClockIcon, BuildingIcon, CheckCircleIcon, EditIcon, TrashIcon, FolderIcon, PlusIcon, PlayIcon, PauseIcon, ArrowUpIcon } from '../../../components/icons';
+import { ClockIcon, BuildingIcon, CheckCircleIcon, EditIcon, TrashIcon, FolderIcon, PlusIcon, PlayIcon, PauseIcon, ArrowUpIcon } from '../../../components/atoms/icons';
 import '../styles/DashboardPage.css';
 
 export default function DashboardPage() {

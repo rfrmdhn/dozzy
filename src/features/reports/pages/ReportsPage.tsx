@@ -3,7 +3,7 @@ import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../../contexts/AuthContext';
 import { formatDuration } from '../../tasks/hooks/useTimeLogs';
 import type { Organization, Project, Task, ReportPeriod } from '../../../types';
-import { ClipboardListIcon, CheckCircleIcon, RefreshIcon, TimerIcon, ChartBarIcon, FolderIcon } from '../../../components/icons';
+import { ClipboardListIcon, CheckCircleIcon, RefreshIcon, TimerIcon, ChartBarIcon, FolderIcon } from '../../../components/atoms/icons';
 import '../styles/ReportsPage.css';
 
 interface ReportData {

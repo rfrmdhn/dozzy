@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { SearchIcon, BellIcon, HelpCircleIcon, GridIcon, LogOutIcon, UserIcon, SettingsIcon } from '../icons';
+import { SearchIcon, BellIcon, HelpCircleIcon, GridIcon, LogOutIcon, UserIcon, SettingsIcon } from '../atoms/icons';
 import './styles/TopBar.css';
 
 export default function TopBar() {

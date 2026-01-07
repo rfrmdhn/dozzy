@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { useTasks } from '../hooks/useTasks';
 import { supabase } from '../../../lib/supabase';
 import type { Task, TaskInput, Project, Organization } from '../../../types';
-import { SortIcon, PlusIcon, CloseIcon } from '../../../components/icons';
+import { SortIcon, PlusIcon, CloseIcon } from '../../../components/atoms/icons';
 import { BoardView } from '../components/BoardView';
 import { ListView } from '../components/ListView';
 import { TasksToolbar } from '../components/TasksToolbar';
