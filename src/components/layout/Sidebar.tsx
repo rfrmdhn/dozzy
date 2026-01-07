@@ -100,6 +100,11 @@ export default function Sidebar() {
 
                                 {isExpanded && (
                                     <div className="nav-children">
+                                        {/* Users Page */}
+                                        <NavLink to={`/organizations/${org.id}/users`} className="nav-item level-2">
+                                            <UsersIcon size={16} /> <span>Team</span>
+                                        </NavLink>
+
                                         {orgProjects.length === 0 ? (
                                             <div className="nav-item level-2 empty-state">
                                                 <span>No projects</span>
@@ -175,6 +180,6 @@ export default function Sidebar() {
                 isOpen={isOrgModalOpen}
                 onClose={() => setIsOrgModalOpen(false)}
             />
-        </aside>
+        </aside >
     );
 }

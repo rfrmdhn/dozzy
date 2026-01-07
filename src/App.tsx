@@ -6,6 +6,7 @@ import LoginPage from './features/auth/pages/LoginPage';
 import DashboardPage from './features/dashboard/pages/DashboardPage';
 import ProjectsPage from './features/projects/pages/ProjectsPage';
 import TasksPage from './features/tasks/pages/TasksPage';
+import UsersPage from './features/users/pages/UsersPage';
 import ReportsPage from './features/reports/pages/ReportsPage';
 import SettingsPage from './features/settings/pages/SettingsPage';
 
@@ -24,6 +25,8 @@ function App() {
               <Route path="/organizations/:orgId/projects" element={<ProjectsPage />} />
               <Route path="/projects" element={<ProjectsPage />} />
               <Route path="/projects/:projectId/tasks" element={<TasksPage />} />
+              <Route path="/organizations/:orgId/users" element={<UsersPage />} />
+              <Route path="/projects" element={<ProjectsPage />} />
               <Route path="/reports" element={<ReportsPage />} />
               <Route path="/settings" element={<SettingsPage />} />
             </Route>
