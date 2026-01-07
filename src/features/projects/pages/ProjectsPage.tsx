@@ -8,7 +8,7 @@ import { FolderIcon, PlusIcon } from '../../../components';
 import '../styles/ProjectsPage.css';
 
 // Components
-import { Button, OrgHeader, ProjectsToolbar, ProjectCard, ProjectModal, OrgEditModal } from '../../../components';
+import { ProjectMembersModal } from '../components/ProjectMembersModal';
 
 export default function ProjectsPage() {
     const { orgId } = useParams<{ orgId: string }>();
@@ -19,6 +19,10 @@ export default function ProjectsPage() {
     const [showModal, setShowModal] = useState(false);
     const [showOrgEditModal, setShowOrgEditModal] = useState(false);
     const [editingProject, setEditingProject] = useState<string | null>(null);
+    // State for managing members
+    const [managingProject, setManagingProject] = useState<any | null>(null); // Ideally Project type
+
+    // ... existing ... (lines 22-73)
     const [orgFormData, setOrgFormData] = useState({ name: '', description: '' });
     const [formData, setFormData] = useState<ProjectInput>({
         name: '',
@@ -33,6 +37,9 @@ export default function ProjectsPage() {
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
     useEffect(() => {
+        // ...
+        // ...
+        // ... (existing code)
         if (orgId) {
             supabase
                 .from('organizations')
@@ -90,6 +97,11 @@ export default function ProjectsPage() {
         setShowModal(true);
     };
 
+    const handleManageMembers = (project: any, e: React.MouseEvent) => {
+        e.stopPropagation();
+        setManagingProject(project);
+    };
+
     const handleDelete = async (id: string, e: React.MouseEvent) => {
         e.stopPropagation();
         if (confirm('Delete this project? All tasks will be removed.')) {
@@ -117,19 +129,15 @@ export default function ProjectsPage() {
     };
 
     // Filter and Sort Logic
-    // In a real app, this might be handled by the hook or backend, 
-    // but preserving existing logic or adding basic client-side filter
     const filteredProjects = projects.filter(p => {
         const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
             (p.description && p.description.toLowerCase().includes(searchQuery.toLowerCase()));
         return matchesSearch;
-        // Note: Filter status logic was not heavily implemented in original code beyond state, 
-        // so leaving it as just search for now or adding mock status filter if needed.
     });
 
     return (
         <div className="page-container">
-            {/* Breadcrumb */}
+            {/* Breadcrumb ... (unchanged) */}
             <div className="breadcrumb">
                 <Link to="/">Home</Link>
                 <span className="breadcrumb-separator">›</span>
@@ -180,6 +188,7 @@ export default function ProjectsPage() {
                             progress={calculateProgress(project.tasks)}
                             onClick={() => navigate(`/projects/${project.id}/tasks`)}
                             onEdit={(e) => handleEdit(project, e)}
+                            onManageMembers={(e) => handleManageMembers(project, e)}
                             onDelete={(e) => handleDelete(project.id, e)}
                             showOrgName={!orgId}
                         />
@@ -213,6 +222,15 @@ export default function ProjectsPage() {
                 initialData={orgFormData}
                 onSubmit={handleOrgEditSubmit}
             />
+
+            {/* Project Members Modal */}
+            {managingProject && (
+                <ProjectMembersModal
+                    isOpen={!!managingProject}
+                    onClose={() => setManagingProject(null)}
+                    project={managingProject}
+                />
+            )}
         </div>
     );
 }

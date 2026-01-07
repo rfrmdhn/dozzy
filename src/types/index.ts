@@ -48,6 +48,17 @@ export interface Project {
 
 export type ProjectStatus = 'active' | 'in_progress' | 'completed' | 'on_hold' | 'archived';
 export type ProjectType = 'kanban' | 'list';
+export type ProjectRole = 'lead' | 'member' | 'viewer';
+
+export interface ProjectMember {
+    id: string;
+    project_id: string;
+    user_id: string;
+    role: ProjectRole;
+    created_at: string;
+    user?: User; // Nested user
+}
+
 export type TaskStatus = 'todo' | 'in_progress' | 'done';
 export type TaskPriority = 'low' | 'medium' | 'high';
 export type TaskType = 'task' | 'bug';

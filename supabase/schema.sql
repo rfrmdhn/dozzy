@@ -271,13 +271,72 @@ CREATE POLICY "Only admin can delete organizations" ON organizations
 -- ============================================
 -- Projects RLS Policies
 -- ============================================
-CREATE POLICY "Org members can view projects" ON projects
+-- ============================================
+-- Project Members Table
+-- ============================================
+CREATE TABLE IF NOT EXISTS project_members (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  project_id UUID REFERENCES projects(id) ON DELETE CASCADE NOT NULL,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  role VARCHAR(20) DEFAULT 'member' CHECK (role IN ('lead', 'member', 'viewer')),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(project_id, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_project_members_project_id ON project_members(project_id);
+CREATE INDEX IF NOT EXISTS idx_project_members_user_id ON project_members(user_id);
+ALTER TABLE project_members ENABLE ROW LEVEL SECURITY;
+
+-- Helper function for Project Access Check (Recursion safe)
+CREATE OR REPLACE FUNCTION get_user_project_ids()
+RETURNS UUID[]
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+STABLE
+AS $$
+BEGIN
+  RETURN ARRAY(
+    SELECT project_id
+    FROM project_members
+    WHERE user_id = auth.uid()
+  );
+END;
+$$;
+
+-- Trigger to auto-add creator
+CREATE OR REPLACE FUNCTION handle_new_project_member()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.project_members (project_id, user_id, role)
+  VALUES (NEW.id, auth.uid(), 'lead');
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS on_project_created ON projects;
+CREATE TRIGGER on_project_created
+  AFTER INSERT ON projects
+  FOR EACH ROW
+  EXECUTE FUNCTION handle_new_project_member();
+
+-- ============================================
+-- Projects RLS Policies
+-- ============================================
+DROP POLICY IF EXISTS "Org members can view projects" ON projects;
+
+CREATE POLICY "Project Access Policy" ON projects
   FOR SELECT USING (
+    -- 1. Org Admin
     EXISTS (
       SELECT 1 FROM organization_members om
       WHERE om.organization_id = projects.organization_id
       AND om.user_id = auth.uid()
+      AND om.role = 'admin'
     )
+    OR
+    -- 2. Project Member
+    id = ANY(get_user_project_ids())
   );
 
 CREATE POLICY "Admin/Editor can insert projects" ON projects
