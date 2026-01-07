@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { NavLink, useParams, useLocation } from 'react-router-dom';
+import { NavLink, useParams, useLocation, Link } from 'react-router-dom';
 import {
     LayoutIcon,
     ListIcon,
@@ -12,10 +12,12 @@ import {
     ChevronDownIcon,
     ChevronRightIcon,
     BuildingIcon,
-    FolderIcon
+    FolderIcon,
+    PlusIcon
 } from '../atoms/icons';
 import { useOrganizations } from '../../features/projects/hooks/useOrganizations';
 import { useProjects } from '../../features/projects/hooks/useProjects';
+import { OrganizationModal } from '../organisms';
 import './styles/Sidebar.css';
 
 export default function Sidebar() {
@@ -26,6 +28,7 @@ export default function Sidebar() {
 
     // State for expanded items (both orgs and projects)
     const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
+    const [isOrgModalOpen, setIsOrgModalOpen] = useState(false);
 
     // Auto-expand based on active project
     useEffect(() => {
@@ -67,7 +70,16 @@ export default function Sidebar() {
 
                 {/* Organizations Hierarchy */}
                 <div className="nav-group">
-                    <div className="nav-section-title">ORGANIZATIONS</div>
+                    <div className="nav-section-header">
+                        <Link to="/" className="nav-section-title hoverable">ORGANIZATIONS</Link>
+                        <button
+                            className="icon-btn-small"
+                            onClick={() => setIsOrgModalOpen(true)}
+                            title="New Organization"
+                        >
+                            <PlusIcon size={14} />
+                        </button>
+                    </div>
 
                     {organizations.map(org => {
                         const orgProjects = projects.filter(p => p.organization_id === org.id);
@@ -156,6 +168,11 @@ export default function Sidebar() {
                     </NavLink>
                 </div>
             </div>
+
+            <OrganizationModal
+                isOpen={isOrgModalOpen}
+                onClose={() => setIsOrgModalOpen(false)}
+            />
         </aside>
     );
 }
