@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
-import { SettingsIcon, UserIcon, BellIcon, EyeIcon, LogOutIcon, Input } from '../../../components';
+import { SettingsIcon, UserIcon, BellIcon, EyeIcon, LogOutIcon, Input, Switch } from '../../../components';
 import '../styles/SettingsPage.css';
 
 type SettingsTab = 'general' | 'notifications' | 'appearance';
@@ -97,28 +97,20 @@ export default function SettingsPage() {
                                         <div className="toggle-label">Email Notifications</div>
                                         <div className="toggle-desc">Receive updates via email</div>
                                     </div>
-                                    <label className="switch">
-                                        <input
-                                            type="checkbox"
-                                            checked={notifications.email}
-                                            onChange={(e) => setNotifications({ ...notifications, email: e.target.checked })}
-                                        />
-                                        <span className="slider round"></span>
-                                    </label>
+                                    <Switch
+                                        checked={notifications.email}
+                                        onChange={(e) => setNotifications({ ...notifications, email: e.target.checked })}
+                                    />
                                 </div>
                                 <div className="toggle-item">
                                     <div className="toggle-info">
                                         <div className="toggle-label">Push Notifications</div>
                                         <div className="toggle-desc">Receive real-time alerts</div>
                                     </div>
-                                    <label className="switch">
-                                        <input
-                                            type="checkbox"
-                                            checked={notifications.push}
-                                            onChange={(e) => setNotifications({ ...notifications, push: e.target.checked })}
-                                        />
-                                        <span className="slider round"></span>
-                                    </label>
+                                    <Switch
+                                        checked={notifications.push}
+                                        onChange={(e) => setNotifications({ ...notifications, push: e.target.checked })}
+                                    />
                                 </div>
                             </div>
                         </div>
