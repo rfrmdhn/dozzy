@@ -8,6 +8,7 @@
     top: 56px;
     left: 0;
     overflow-y: auto;
+    overflow-x: hidden;
     display: flex;
     flex-direction: column;
 }
@@ -107,7 +108,7 @@
 .collapse-btn {
     position: absolute;
     bottom: var(--space-4);
-    right: -12px;
+    right: var(--space-2);
     width: 24px;
     height: 24px;
     background: var(--color-white);
