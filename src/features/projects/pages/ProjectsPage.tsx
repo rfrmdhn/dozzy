@@ -43,8 +43,13 @@ export default function ProjectsPage() {
         }
     }, [orgId]);
 
-    // Calculate project progress (mock based on tasks)
-    const getProjectProgress = () => Math.floor(Math.random() * 100);
+    // Calculate project progress based on tasks
+    const calculateProgress = (tasks?: { status: string }[]) => {
+        if (!tasks || tasks.length === 0) return 0;
+        const total = tasks.length;
+        const completed = tasks.filter(t => t.status === 'done').length;
+        return Math.round((completed / total) * 100);
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -172,7 +177,7 @@ export default function ProjectsPage() {
                         <ProjectCard
                             key={project.id}
                             project={project}
-                            progress={getProjectProgress()}
+                            progress={calculateProgress(project.tasks)}
                             onClick={() => navigate(`/projects/${project.id}/tasks`)}
                             onEdit={(e) => handleEdit(project, e)}
                             onDelete={(e) => handleDelete(project.id, e)}

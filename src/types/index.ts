@@ -41,6 +41,7 @@ export interface Project {
     end_date: string | null;
     status: ProjectStatus;
     type: ProjectType;
+    tasks?: { status: TaskStatus }[];
     created_at: string;
     updated_at: string;
 }

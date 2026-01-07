@@ -30,7 +30,7 @@ export function useProjects(organizationId?: string): UseProjectsReturn {
             setIsLoading(true);
             let query = supabase
                 .from('projects')
-                .select('*, organizations(id, name)')
+                .select('*, organizations(id, name), tasks(status)')
                 .order('created_at', { ascending: false });
 
             if (organizationId) {
