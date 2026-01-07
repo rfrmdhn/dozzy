@@ -4,12 +4,22 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { formatDuration } from '../../tasks/hooks/useTimeLogs';
 import type { Organization, Project, Task, ReportPeriod } from '../../../types';
 import { ClipboardListIcon, CheckCircleIcon, RefreshIcon, TimerIcon, ChartBarIcon, FolderIcon } from '../../../components/atoms/icons';
+import { Button } from '../../../components/atoms/Button';
+import { Card } from '../../../components/atoms/Card';
+import { Select } from '../../../components/molecules/Select';
 import '../styles/ReportsPage.css';
 
 interface ReportData {
     tasks: Task[];
     timeLogs: { task_id: string; duration: number }[];
 }
+
+const PERIOD_OPTIONS = [
+    { value: 'day', label: 'Today' },
+    { value: 'week', label: 'Last 7 days' },
+    { value: 'month', label: 'Last 30 days' },
+    { value: 'year', label: 'Last year' },
+];
 
 export default function ReportsPage() {
     const { user } = useAuth();
@@ -155,6 +165,9 @@ export default function ReportsPage() {
         };
     }, [reportData]);
 
+    const orgOptions = organizations.map(org => ({ value: org.id, label: org.name }));
+    const projectOptions = projects.map(proj => ({ value: proj.id, label: proj.name }));
+
     return (
         <div className="page-container">
             <div className="page-header">
@@ -167,56 +180,33 @@ export default function ReportsPage() {
             {/* Filters */}
             <div className="report-filters">
                 <div className="filters-grid">
-                    <div className="input-group">
-                        <label className="input-label">Organization</label>
-                        <select
-                            className="input"
-                            value={selectedOrg}
-                            onChange={(e) => setSelectedOrg(e.target.value)}
-                        >
-                            <option value="">Select organization</option>
-                            {organizations.map((org) => (
-                                <option key={org.id} value={org.id}>
-                                    {org.name}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
+                    <Select
+                        label="Organization"
+                        value={selectedOrg}
+                        onChange={(e) => setSelectedOrg(e.target.value)}
+                        options={orgOptions}
+                        placeholder="Select organization"
+                    />
 
-                    <div className="input-group">
-                        <label className="input-label">Project (optional)</label>
-                        <select
-                            className="input"
-                            value={selectedProject}
-                            onChange={(e) => setSelectedProject(e.target.value)}
-                            disabled={!selectedOrg}
-                        >
-                            <option value="">All projects</option>
-                            {projects.map((proj) => (
-                                <option key={proj.id} value={proj.id}>
-                                    {proj.name}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
+                    <Select
+                        label="Project (optional)"
+                        value={selectedProject}
+                        onChange={(e) => setSelectedProject(e.target.value)}
+                        options={projectOptions}
+                        placeholder="All projects"
+                        disabled={!selectedOrg}
+                    />
 
-                    <div className="input-group">
-                        <label className="input-label">Period</label>
-                        <select
-                            className="input"
-                            value={period}
-                            onChange={(e) => setPeriod(e.target.value as ReportPeriod)}
-                        >
-                            <option value="day">Today</option>
-                            <option value="week">Last 7 days</option>
-                            <option value="month">Last 30 days</option>
-                            <option value="year">Last year</option>
-                        </select>
-                    </div>
+                    <Select
+                        label="Period"
+                        value={period}
+                        onChange={(e) => setPeriod(e.target.value as ReportPeriod)}
+                        options={PERIOD_OPTIONS}
+                    />
 
                     <div className="input-group filter-action">
-                        <button
-                            className="btn btn-primary"
+                        <Button
+                            variant="primary"
                             onClick={generateReport}
                             disabled={!selectedOrg || isLoading}
                         >
@@ -225,7 +215,7 @@ export default function ReportsPage() {
                                     <ChartBarIcon size={18} /> Generate Report
                                 </>
                             )}
-                        </button>
+                        </Button>
                     </div>
                 </div>
             </div>
@@ -235,7 +225,7 @@ export default function ReportsPage() {
                 <div className="report-results">
                     {/* Summary Cards */}
                     <div className="summary-grid">
-                        <div className="summary-card">
+                        <Card className="summary-card">
                             <div className="summary-icon">
                                 <ClipboardListIcon size={24} />
                             </div>
@@ -243,8 +233,8 @@ export default function ReportsPage() {
                                 <span className="summary-value">{summary.total}</span>
                                 <span className="summary-label">Total Tasks</span>
                             </div>
-                        </div>
-                        <div className="summary-card done">
+                        </Card>
+                        <Card className="summary-card done">
                             <div className="summary-icon">
                                 <CheckCircleIcon size={24} />
                             </div>
@@ -252,8 +242,8 @@ export default function ReportsPage() {
                                 <span className="summary-value">{summary.done}</span>
                                 <span className="summary-label">Completed</span>
                             </div>
-                        </div>
-                        <div className="summary-card progress">
+                        </Card>
+                        <Card className="summary-card progress">
                             <div className="summary-icon">
                                 <RefreshIcon size={24} />
                             </div>
@@ -261,8 +251,8 @@ export default function ReportsPage() {
                                 <span className="summary-value">{summary.inProgress}</span>
                                 <span className="summary-label">In Progress</span>
                             </div>
-                        </div>
-                        <div className="summary-card time">
+                        </Card>
+                        <Card className="summary-card time">
                             <div className="summary-icon">
                                 <TimerIcon size={24} />
                             </div>
@@ -270,7 +260,7 @@ export default function ReportsPage() {
                                 <span className="summary-value">{formatDuration(summary.totalTime)}</span>
                                 <span className="summary-label">Time Logged</span>
                             </div>
-                        </div>
+                        </Card>
                     </div>
 
                     {/* Completion Rate */}

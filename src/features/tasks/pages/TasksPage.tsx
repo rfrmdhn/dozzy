@@ -4,6 +4,9 @@ import { useTasks } from '../hooks/useTasks';
 import { supabase } from '../../../lib/supabase';
 import type { Task, TaskInput, Project, Organization } from '../../../types';
 import { SortIcon, PlusIcon, CloseIcon } from '../../../components/atoms/icons';
+import { Button } from '../../../components/atoms/Button';
+import { Input } from '../../../components/molecules/Input';
+import { Modal } from '../../../components/molecules/Modal';
 import { BoardView } from '../components/BoardView';
 import { ListView } from '../components/ListView';
 import { TasksToolbar } from '../components/TasksToolbar';
@@ -116,6 +119,21 @@ export default function TasksPage() {
         setShowEditModal(true);
     };
 
+    const editModalFooter = (
+        <>
+            <Button
+                variant="secondary"
+                onClick={() => setShowEditModal(false)}
+                type="button"
+            >
+                Cancel
+            </Button>
+            <Button type="submit" onClick={() => setShowEditModal(false)}>
+                Save Changes
+            </Button>
+        </>
+    );
+
     return (
         <div className="page-container">
             <ProjectHeader
@@ -151,9 +169,9 @@ export default function TasksPage() {
                     <p className="empty-state-description">
                         {error.message || 'There was an error loading your tasks. Please try again.'}
                     </p>
-                    <button className="btn btn-secondary" onClick={() => window.location.reload()}>
+                    <Button variant="secondary" onClick={() => window.location.reload()}>
                         Retry
-                    </button>
+                    </Button>
                     <div style={{ marginTop: '1rem', fontSize: '0.75rem', color: 'var(--color-gray-500)' }}>
                         <p>Note: Ensure you have configured your .env file with valid Supabase credentials.</p>
                     </div>
@@ -174,9 +192,9 @@ export default function TasksPage() {
                             : 'Create your first task to get started.'}
                     </p>
                     {!searchQuery && (
-                        <button className="btn btn-primary" onClick={() => setShowModal(true)}>
+                        <Button variant="primary" onClick={() => setShowModal(true)}>
                             <PlusIcon size={16} /> Create Task
-                        </button>
+                        </Button>
                     )}
                 </div>
             ) : viewMode === 'list' ? (
@@ -206,49 +224,31 @@ export default function TasksPage() {
             />
 
             {/* Edit Project Modal */}
-            {showEditModal && (
-                <div className="modal-overlay" onClick={() => setShowEditModal(false)}>
-                    <div className="modal" onClick={(e) => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <h2 className="modal-title">Edit Project Details</h2>
-                            <button className="modal-close" onClick={() => setShowEditModal(false)}>
-                                <CloseIcon size={20} />
-                            </button>
-                        </div>
-                        <form onSubmit={(e) => { e.preventDefault(); setShowEditModal(false); }}>
-                            <div className="input-group">
-                                <label className="input-label">Project Name</label>
-                                <input
-                                    type="text"
-                                    className="input"
-                                    defaultValue={project?.name}
-                                    autoFocus
-                                />
-                            </div>
-                            <div className="input-group mt-4">
-                                <label className="input-label">Description</label>
-                                <textarea
-                                    className="input"
-                                    defaultValue={project?.description || ''}
-                                    rows={3}
-                                />
-                            </div>
-                            <div className="modal-footer">
-                                <button
-                                    type="button"
-                                    className="btn btn-secondary"
-                                    onClick={() => setShowEditModal(false)}
-                                >
-                                    Cancel
-                                </button>
-                                <button type="submit" className="btn btn-primary">
-                                    Save Changes
-                                </button>
-                            </div>
-                        </form>
+            <Modal
+                isOpen={showEditModal}
+                onClose={() => setShowEditModal(false)}
+                title="Edit Project Details"
+                footer={editModalFooter}
+            >
+                <form onSubmit={(e) => { e.preventDefault(); setShowEditModal(false); }}>
+                    <div className="input-group">
+                        <Input
+                            label="Project Name"
+                            defaultValue={project?.name}
+                            containerClassName="mb-0"
+                            autoFocus
+                        />
                     </div>
-                </div>
-            )}
+                    <div className="input-group mt-4">
+                        <label className="input-label">Description</label>
+                        <textarea
+                            className="input"
+                            defaultValue={project?.description || ''}
+                            rows={3}
+                        />
+                    </div>
+                </form>
+            </Modal>
 
             {showTimeModal && selectedTask && (
                 <TimeLogModal

@@ -5,6 +5,10 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { supabase } from '../../../lib/supabase';
 import type { OrganizationInput } from '../../../types';
 import { ClockIcon, BuildingIcon, CheckCircleIcon, EditIcon, TrashIcon, FolderIcon, PlusIcon, PlayIcon, PauseIcon, ArrowUpIcon } from '../../../components/atoms/icons';
+import { Button } from '../../../components/atoms/Button';
+import { Input } from '../../../components/molecules/Input';
+import { Card } from '../../../components/atoms/Card';
+import { Modal } from '../../../components/molecules/Modal';
 import '../styles/DashboardPage.css';
 
 export default function DashboardPage() {
@@ -172,6 +176,21 @@ export default function DashboardPage() {
         setFormData({ name: '', description: '' });
     };
 
+    const modalFooter = (
+        <>
+            <Button
+                variant="secondary"
+                onClick={handleCloseModal}
+                type="button"
+            >
+                Cancel
+            </Button>
+            <Button type="submit" onClick={handleSubmit}>
+                {editingOrg ? 'Save Changes' : 'Create'}
+            </Button>
+        </>
+    );
+
     return (
         <div className="page-container">
             {/* Header */}
@@ -194,40 +213,40 @@ export default function DashboardPage() {
                             minute: '2-digit'
                         })}</span>
                     </div>
-                    <button className="btn btn-primary" onClick={() => setShowModal(true)}>
+                    <Button variant="primary" onClick={() => setShowModal(true)}>
                         <PlusIcon size={16} /> New Task
-                    </button>
+                    </Button>
                 </div>
             </div>
 
             {/* Stats Cards */}
             <div className="stats-grid">
-                <div className="stat-card">
+                <Card className="stat-card">
                     <div className="stat-card-header">
                         <span className="stat-card-label">Hours Logged</span>
                         <div className="stat-card-icon" style={{ background: 'var(--color-primary-100)', color: 'var(--color-primary-500)' }}><ClockIcon size={20} /></div>
                     </div>
                     <div className="stat-card-value">{formatTime(stats.totalTime)}</div>
                     <div className="stat-card-change positive"><ArrowUpIcon size={14} /> +12% this week</div>
-                </div>
+                </Card>
 
-                <div className="stat-card">
+                <Card className="stat-card">
                     <div className="stat-card-header">
                         <span className="stat-card-label">Active Orgs</span>
                         <div className="stat-card-icon" style={{ background: 'var(--color-info-light)', color: 'var(--color-info)' }}><BuildingIcon size={20} /></div>
                     </div>
                     <div className="stat-card-value">{stats.activeOrgs}</div>
                     <div className="stat-card-change">Across all workspaces</div>
-                </div>
+                </Card>
 
-                <div className="stat-card">
+                <Card className="stat-card">
                     <div className="stat-card-header">
                         <span className="stat-card-label">Pending Tasks</span>
                         <div className="stat-card-icon" style={{ background: 'var(--color-warning-light)', color: 'var(--color-warning)' }}><CheckCircleIcon size={20} /></div>
                     </div>
                     <div className="stat-card-value">{stats.pendingTasks}</div>
                     <div className="stat-card-change">{stats.pendingTasks > 2 ? 'High Priority' : 'On track'}</div>
-                </div>
+                </Card>
             </div>
 
             {/* Organizations Section */}
@@ -235,9 +254,9 @@ export default function DashboardPage() {
                 <div className="section-header">
                     <h2 className="section-title">Your Organizations</h2>
                     {organizations.length > 0 && (
-                        <button className="btn btn-link" onClick={() => navigate('/organizations')}>
+                        <Button variant="link" onClick={() => navigate('/organizations')} className="view-all-btn">
                             View All
-                        </button>
+                        </Button>
                     )}
                 </div>
 
@@ -252,14 +271,14 @@ export default function DashboardPage() {
                         <p className="empty-state-description">
                             Create your first organization to start managing projects and tasks.
                         </p>
-                        <button className="btn btn-primary" onClick={() => setShowModal(true)}>
+                        <Button variant="primary" onClick={() => setShowModal(true)}>
                             <PlusIcon size={16} /> Create Organization
-                        </button>
+                        </Button>
                     </div>
                 ) : (
                     <div className="org-grid">
                         {organizations.slice(0, 4).map((org) => (
-                            <div
+                            <Card
                                 key={org.id}
                                 className="org-card"
                                 onClick={() => navigate(`/organizations/${org.id}/projects`)}
@@ -277,20 +296,22 @@ export default function DashboardPage() {
                                     </div>
                                 </div>
                                 <div className="org-card-actions" onClick={(e) => e.stopPropagation()}>
-                                    <button
-                                        className="btn btn-ghost btn-sm"
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
                                         onClick={() => handleEdit(org)}
                                     >
                                         <EditIcon size={16} />
-                                    </button>
-                                    <button
-                                        className="btn btn-ghost btn-sm"
-                                        onClick={(e) => handleDelete(org.id, e)}
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={(e: React.MouseEvent) => handleDelete(org.id, e)}
                                     >
                                         <TrashIcon size={16} />
-                                    </button>
+                                    </Button>
                                 </div>
-                            </div>
+                            </Card>
                         ))}
                     </div>
                 )}
@@ -334,9 +355,9 @@ export default function DashboardPage() {
                                         <span className="project-due">{formatDate(project.due_date) || 'No date'}</span>
                                     </div>
                                 ))}
-                                <button className="btn btn-link view-all-btn" onClick={() => navigate('/organizations')}>
+                                <Button variant="link" className="view-all-btn" onClick={() => navigate('/organizations')}>
                                     View All Projects
-                                </button>
+                                </Button>
                             </div>
                         )}
                     </div>
@@ -344,7 +365,7 @@ export default function DashboardPage() {
 
                 <div className="dashboard-sidebar">
                     {/* Today's Agenda */}
-                    <div className="sidebar-card">
+                    <Card className="sidebar-card">
                         <h3 className="sidebar-card-title">Today's Agenda</h3>
                         {todayTasks.length === 0 ? (
                             <div className="empty-state-small">
@@ -367,16 +388,15 @@ export default function DashboardPage() {
                                 ))}
                             </div>
                         )}
-                    </div>
+                    </Card>
 
                     {/* Quick Timer */}
-                    <div className="timer-card">
+                    <Card className="timer-card">
                         <div className="timer-header">
                             <ClockIcon size={20} />
                             <span>Track Time</span>
                         </div>
-                        <input
-                            type="text"
+                        <Input
                             className="timer-input"
                             placeholder="What are you working on?"
                             value={timerDescription}
@@ -389,67 +409,41 @@ export default function DashboardPage() {
                         >
                             {timerRunning ? <PauseIcon size={24} /> : <PlayIcon size={24} />}
                         </button>
-                    </div>
+                    </Card>
                 </div>
             </div>
 
-            {/* Modal */}
-            {showModal && (
-                <div className="modal-overlay" onClick={handleCloseModal}>
-                    <div className="modal" onClick={(e) => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <h2 className="modal-title">
-                                {editingOrg ? 'Edit Organization' : 'New Organization'}
-                            </h2>
-                            <button className="modal-close" onClick={handleCloseModal}>
-                                ✕
-                            </button>
-                        </div>
-                        <form onSubmit={handleSubmit}>
-                            <div className="input-group">
-                                <label className="input-label">Name</label>
-                                <input
-                                    type="text"
-                                    className="input"
-                                    placeholder="e.g., Acme Corp, Personal"
-                                    value={formData.name}
-                                    onChange={(e) =>
-                                        setFormData({ ...formData, name: e.target.value })
-                                    }
-                                    required
-                                    autoFocus
-                                />
-                            </div>
-                            <div className="input-group mt-4">
-                                <label className="input-label">Description (optional)</label>
-                                <textarea
-                                    className="input"
-                                    placeholder="Brief description of this organization"
-                                    value={formData.description}
-                                    onChange={(e) =>
-                                        setFormData({ ...formData, description: e.target.value })
-                                    }
-                                    rows={3}
-                                />
-                            </div>
-                            <div className="modal-footer">
-                                <button
-                                    type="button"
-                                    className="btn btn-secondary"
-                                    onClick={handleCloseModal}
-                                >
-                                    Cancel
-                                </button>
-                                <button type="submit" className="btn btn-primary">
-                                    {editingOrg ? 'Save Changes' : 'Create'}
-                                </button>
-                            </div>
-                        </form>
+            <Modal
+                isOpen={showModal}
+                onClose={handleCloseModal}
+                title={editingOrg ? 'Edit Organization' : 'New Organization'}
+                footer={modalFooter}
+            >
+                <div className="input-field-group">
+                    <Input
+                        label="Name"
+                        placeholder="e.g., Acme Corp, Personal"
+                        value={formData.name}
+                        onChange={(e) =>
+                            setFormData({ ...formData, name: e.target.value })
+                        }
+                        required
+                        autoFocus
+                    />
+                    <div className="input-group mt-4">
+                        <label className="input-label">Description (optional)</label>
+                        <textarea
+                            className="input"
+                            placeholder="Brief description of this organization"
+                            value={formData.description}
+                            onChange={(e) =>
+                                setFormData({ ...formData, description: e.target.value })
+                            }
+                            rows={3}
+                        />
                     </div>
                 </div>
-            )}
-
-
+            </Modal>
         </div>
     );
 }

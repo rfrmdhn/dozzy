@@ -3,6 +3,8 @@ import type { FormEvent } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { MailIcon, LockIcon, UserIcon, EyeIcon, EyeOffIcon, CheckIcon } from '../../../components/atoms/icons';
+import { Input } from '../../../components/molecules/Input';
+import { Button } from '../../../components/atoms/Button';
 import '../styles/LoginPage.css';
 
 export default function LoginPage() {
@@ -103,62 +105,45 @@ export default function LoginPage() {
             )}
 
             {isSignUp && (
-              <div className="input-group">
-                <label htmlFor="username" className="input-label">
-                  Username
-                </label>
-                <div className="input-with-icon">
-                  <span className="input-icon"><UserIcon size={18} /></span>
-                  <input
-                    id="username"
-                    type="text"
-                    className="input"
-                    placeholder="johndoe"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    required={isSignUp}
-                    autoComplete="username"
-                  />
-                </div>
-              </div>
+              <Input
+                id="username"
+                label="Username"
+                type="text"
+                placeholder="johndoe"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required={isSignUp}
+                autoComplete="username"
+                icon={<UserIcon size={18} />}
+              />
             )}
 
-            <div className="input-group">
-              <label htmlFor="email" className="input-label">
-                {isSignUp ? 'Email address' : 'Username or Email'}
-              </label>
-              <div className="input-with-icon">
-                <span className="input-icon"><MailIcon size={18} /></span>
-                <input
-                  id="email"
-                  type={isSignUp ? "email" : "text"}
-                  className="input"
-                  placeholder={isSignUp ? "name@company.com" : "name@company.com or username"}
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  autoComplete="username"
-                />
-              </div>
-            </div>
+            <Input
+              id="email"
+              label={isSignUp ? 'Email address' : 'Username or Email'}
+              type={isSignUp ? "email" : "text"}
+              placeholder={isSignUp ? "name@company.com" : "name@company.com or username"}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              autoComplete="username"
+              icon={<MailIcon size={18} />}
+              containerClassName="mt-4"
+            />
 
-            <div className="input-group">
-              <label htmlFor="password" className="input-label">
-                Password
-              </label>
-              <div className="input-with-icon">
-                <span className="input-icon"><LockIcon size={18} /></span>
-                <input
-                  id="password"
-                  type={showPassword ? 'text' : 'password'}
-                  className="input"
-                  placeholder="Enter your password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  minLength={6}
-                  autoComplete={isSignUp ? 'new-password' : 'current-password'}
-                />
+            <Input
+              id="password"
+              label="Password"
+              type={showPassword ? 'text' : 'password'}
+              placeholder="Enter your password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              minLength={6}
+              autoComplete={isSignUp ? 'new-password' : 'current-password'}
+              icon={<LockIcon size={18} />}
+              containerClassName="mt-4"
+              rightElement={
                 <button
                   type="button"
                   className="password-toggle"
@@ -167,8 +152,8 @@ export default function LoginPage() {
                 >
                   {showPassword ? <EyeOffIcon size={18} /> : <EyeIcon size={18} />}
                 </button>
-              </div>
-            </div>
+              }
+            />
 
             {!isSignUp && (
               <div className="form-options">
@@ -176,15 +161,17 @@ export default function LoginPage() {
                   <input type="checkbox" className="checkbox" />
                   <span>Remember me</span>
                 </label>
-                <a href="#" className="forgot-link" onClick={(e) => e.preventDefault()}>
+                <Button variant="link" className="forgot-link" onClick={() => { }}>
                   Forgot password?
-                </a>
+                </Button>
               </div>
             )}
 
-            <button
+            <Button
               type="submit"
-              className="btn btn-primary btn-lg w-full"
+              variant="primary"
+              size="lg"
+              className="w-full mt-6"
               disabled={isSubmitting}
             >
               {isSubmitting ? (
@@ -194,28 +181,26 @@ export default function LoginPage() {
               ) : (
                 'Log In'
               )}
-            </button>
+            </Button>
           </form>
 
           <div className="login-footer">
             <p>
               {isSignUp ? 'Already have an account?' : "Don't have an account?"}
-              <button
-                type="button"
-                className="toggle-link"
+              <Button
+                variant="link"
+                className="toggle-link ml-1"
                 onClick={() => {
                   setIsSignUp(!isSignUp);
                   setError(null);
                 }}
               >
                 {isSignUp ? 'Log In' : 'Sign up'}
-              </button>
+              </Button>
             </p>
           </div>
         </div>
       </div>
-
-
     </div>
   );
 }

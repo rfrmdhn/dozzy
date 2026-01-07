@@ -1,5 +1,7 @@
 import type { Dispatch, SetStateAction } from 'react';
 import { SearchIcon, ListIcon, KanbanIcon, FilterIcon, SortIcon, PlusIcon } from '../../../components/atoms/icons';
+import { Button } from '../../../components/atoms/Button';
+import { Input } from '../../../components/molecules/Input';
 
 interface TasksToolbarProps {
     searchQuery: string;
@@ -34,40 +36,43 @@ export function TasksToolbar({
 }: TasksToolbarProps) {
     return (
         <div className="tasks-toolbar">
-            <div className="search-box">
-                <SearchIcon size={18} className="search-icon" />
-                <input
-                    type="text"
+            <div className="search-box-wrapper">
+                <Input
+                    icon={<SearchIcon size={18} />}
                     className="search-input"
                     placeholder="Search tasks..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
+                    containerClassName="search-box-container"
                 />
             </div>
             <div className="toolbar-actions">
                 <div className="view-toggle">
-                    <button
-                        className={`btn btn-icon ${viewMode === 'list' ? 'active' : ''}`}
+                    <Button
+                        variant="ghost"
+                        className={`btn-icon ${viewMode === 'list' ? 'active' : ''}`}
                         onClick={() => setViewMode('list')}
                         title="List view"
                     >
                         <ListIcon size={18} />
-                    </button>
-                    <button
-                        className={`btn btn-icon ${viewMode === 'board' ? 'active' : ''}`}
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        className={`btn-icon ${viewMode === 'board' ? 'active' : ''}`}
                         onClick={() => setViewMode('board')}
                         title="Board view"
                     >
                         <KanbanIcon size={18} />
-                    </button>
+                    </Button>
                 </div>
                 <div className="dropdown">
-                    <button
-                        className="btn btn-secondary btn-sm"
+                    <Button
+                        variant="secondary"
+                        size="sm"
                         onClick={() => setShowFilterMenu(!showFilterMenu)}
                     >
                         <FilterIcon size={16} /> Filter
-                    </button>
+                    </Button>
                     {showFilterMenu && (
                         <div className="dropdown-menu">
                             <button
@@ -110,12 +115,13 @@ export function TasksToolbar({
                     )}
                 </div>
                 <div className="dropdown">
-                    <button
-                        className="btn btn-secondary btn-sm"
+                    <Button
+                        variant="secondary"
+                        size="sm"
                         onClick={() => setShowSortMenu(!showSortMenu)}
                     >
                         <SortIcon size={16} /> Sort
-                    </button>
+                    </Button>
                     {showSortMenu && (
                         <div className="dropdown-menu">
                             <button
@@ -148,9 +154,9 @@ export function TasksToolbar({
                         </div>
                     )}
                 </div>
-                <button className="btn btn-primary" onClick={onNewTask}>
+                <Button variant="primary" onClick={onNewTask}>
                     <PlusIcon size={16} /> New Task
-                </button>
+                </Button>
             </div>
         </div>
     );

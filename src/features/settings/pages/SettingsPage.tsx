@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { SettingsIcon, UserIcon, BellIcon, EyeIcon, LogOutIcon } from '../../../components/atoms/icons';
+import { Input } from '../../../components/molecules/Input';
 import '../styles/SettingsPage.css';
 
 type SettingsTab = 'general' | 'notifications' | 'appearance';
@@ -73,16 +74,14 @@ export default function SettingsPage() {
                     {activeTab === 'general' && (
                         <div className="settings-section">
                             <h2 className="section-title">Profile Information</h2>
-                            <div className="form-group">
-                                <label className="label">Email Address</label>
-                                <input
-                                    type="email"
-                                    className="input"
-                                    value={user?.email || ''}
-                                    disabled
-                                />
-                                <span className="help-text">Your email address is managed via Supabase Auth</span>
-                            </div>
+                            <Input
+                                label="Email Address"
+                                type="email"
+                                value={user?.email || ''}
+                                disabled
+                                helpText="Your email address is managed via Supabase Auth"
+                                containerClassName="mb-6"
+                            />
                             <div className="form-group mt-4">
                                 <label className="label">User ID</label>
                                 <code className="code-block">{user?.id}</code>

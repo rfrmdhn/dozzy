@@ -1,5 +1,6 @@
 import { type Task, type TaskStatus, type TaskPriority } from '../../../types';
 import { CalendarIcon, ClockIcon, EditIcon, TrashIcon, FlagIcon } from '../../../components/atoms/icons';
+import { Button } from '../../../components/atoms/Button';
 
 interface ListViewProps {
     tasks: Task[];
@@ -92,27 +93,30 @@ export function ListView({ tasks, onUpdateStatus, onEdit, onDelete, onLogTime }:
                             </td>
                             <td>
                                 <div className="row-actions">
-                                    <button
-                                        className="btn btn-ghost btn-sm"
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
                                         onClick={() => onLogTime(task)}
                                         title="Log time"
                                     >
                                         <ClockIcon size={16} />
-                                    </button>
-                                    <button
-                                        className="btn btn-ghost btn-sm"
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
                                         onClick={() => onEdit(task)}
                                         title="Edit"
                                     >
                                         <EditIcon size={16} />
-                                    </button>
-                                    <button
-                                        className="btn btn-ghost btn-sm"
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
                                         onClick={() => onDelete(task.id)}
                                         title="Delete"
                                     >
                                         <TrashIcon size={16} />
-                                    </button>
+                                    </Button>
                                 </div>
                             </td>
                         </tr>

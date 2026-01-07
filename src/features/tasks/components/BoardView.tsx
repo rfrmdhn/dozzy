@@ -1,6 +1,8 @@
 import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-pangea/dnd';
 import { type Task, type TaskStatus, type TaskPriority } from '../../../types';
 import { CalendarIcon, ClockIcon, FlagIcon } from '../../../components/atoms/icons';
+import { Button } from '../../../components/atoms/Button';
+import { Card } from '../../../components/atoms/Card';
 import '../styles/BoardView.css';
 
 interface BoardViewProps {
@@ -66,44 +68,49 @@ export function BoardView({ tasks, onUpdateStatus, onEdit, onLogTime }: BoardVie
                                             <Draggable key={task.id} draggableId={task.id} index={index}>
                                                 {(provided, snapshot) => (
                                                     <div
-                                                        className={`board-card ${snapshot.isDragging ? 'dragging' : ''}`}
                                                         ref={provided.innerRef}
                                                         {...provided.draggableProps}
                                                         {...provided.dragHandleProps}
-                                                        onClick={() => onEdit(task)}
                                                     >
-                                                        <div className="card-header">
-                                                            <div className="card-labels">
-                                                                {task.labels?.map((label, i) => (
-                                                                    <span key={i} className="card-label">
-                                                                        {label}
-                                                                    </span>
-                                                                ))}
+                                                        <Card
+                                                            className={`board-card ${snapshot.isDragging ? 'dragging' : ''}`}
+                                                            onClick={() => onEdit(task)}
+                                                        >
+                                                            <div className="card-header">
+                                                                <div className="card-labels">
+                                                                    {task.labels?.map((label, i) => (
+                                                                        <span key={i} className="card-label">
+                                                                            {label}
+                                                                        </span>
+                                                                    ))}
+                                                                </div>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    className="btn-icon-sm"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        onLogTime(task);
+                                                                    }}
+                                                                >
+                                                                    <ClockIcon size={14} />
+                                                                </Button>
                                                             </div>
-                                                            <button
-                                                                className="btn-icon-sm"
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    onLogTime(task);
-                                                                }}
-                                                            >
-                                                                <ClockIcon size={14} />
-                                                            </button>
-                                                        </div>
-                                                        <h4 className={`card-title ${task.status === 'done' ? 'completed' : ''}`}>
-                                                            {task.title}
-                                                        </h4>
-                                                        <div className="card-footer">
-                                                            <div className="card-meta">
-                                                                <FlagIcon size={14} style={{ color: getPriorityColor(task.priority) }} />
-                                                                {task.due_date && (
-                                                                    <span className="card-date">
-                                                                        <CalendarIcon size={14} />
-                                                                        {new Date(task.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                                                                    </span>
-                                                                )}
+                                                            <h4 className={`card-title ${task.status === 'done' ? 'completed' : ''}`}>
+                                                                {task.title}
+                                                            </h4>
+                                                            <div className="card-footer">
+                                                                <div className="card-meta">
+                                                                    <FlagIcon size={14} style={{ color: getPriorityColor(task.priority) }} />
+                                                                    {task.due_date && (
+                                                                        <span className="card-date">
+                                                                            <CalendarIcon size={14} />
+                                                                            {new Date(task.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
                                                             </div>
-                                                        </div>
+                                                        </Card>
                                                     </div>
                                                 )}
                                             </Draggable>

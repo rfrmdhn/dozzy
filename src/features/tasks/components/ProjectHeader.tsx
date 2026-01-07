@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import type { Project } from '../../../types';
 import { BuildingIcon, EditIcon, ShareIcon } from '../../../components/atoms/icons';
+import { Button } from '../../../components/atoms/Button';
 
 interface ProjectHeaderProps {
     project: Project | null;
@@ -29,12 +30,12 @@ export function ProjectHeader({ project, onEditDetails, onShare, progress }: Pro
                     )}
                 </div>
                 <div className="project-header-actions">
-                    <button className="btn btn-secondary" onClick={onEditDetails}>
+                    <Button variant="secondary" onClick={onEditDetails}>
                         <EditIcon size={16} /> Edit Details
-                    </button>
-                    <button className="btn btn-secondary" onClick={onShare}>
+                    </Button>
+                    <Button variant="secondary" onClick={onShare}>
                         <ShareIcon size={16} /> Share
-                    </button>
+                    </Button>
                 </div>
             </div>
 
