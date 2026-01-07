@@ -153,7 +153,9 @@ export default function Sidebar() {
 
                 {/* Other Apps */}
                 <div className="nav-group">
-                    <div className="nav-section-title">APPS</div>
+                    <div className="nav-section-header">
+                        <div className="nav-section-title">APPS</div>
+                    </div>
                     <NavLink to="/reports" className="nav-item level-1">
                         <FileTextIcon size={18} /> <span>Reports</span>
                     </NavLink>
