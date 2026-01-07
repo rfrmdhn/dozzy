@@ -5,7 +5,7 @@ import {
     CalendarIcon,
     FileTextIcon,
     SettingsIcon,
-    ChevronLeftIcon,
+
     KanbanIcon,
     BriefcaseIcon,
     ClockIcon
@@ -82,9 +82,7 @@ export default function Sidebar() {
                     <NavLink to="/settings" className="nav-item">
                         <SettingsIcon size={18} /> <span>Project Settings</span>
                     </NavLink>
-                    <button className="collapse-btn">
-                        <ChevronLeftIcon size={16} />
-                    </button>
+
                 </div>
             </div>
 

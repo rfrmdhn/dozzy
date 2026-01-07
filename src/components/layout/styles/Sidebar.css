@@ -104,25 +104,3 @@
     padding-top: var(--space-4);
     border-top: 1px solid var(--color-gray-200);
 }
-
-.collapse-btn {
-    position: absolute;
-    bottom: var(--space-4);
-    right: var(--space-2);
-    width: 24px;
-    height: 24px;
-    background: var(--color-white);
-    border: 1px solid var(--color-gray-200);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    cursor: pointer;
-    opacity: 0;
-    transition: opacity 0.2s;
-}
-
-.sidebar:hover .collapse-btn {
-    opacity: 1;
-}
