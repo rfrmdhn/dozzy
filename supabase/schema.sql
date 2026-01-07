@@ -90,6 +90,7 @@ CREATE TABLE IF NOT EXISTS tasks (
 CREATE TABLE IF NOT EXISTS time_logs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   task_id UUID REFERENCES tasks(id) ON DELETE CASCADE NOT NULL,
+  user_id UUID REFERENCES auth.users(id) DEFAULT auth.uid(), -- Added for RBAC
   start_time TIMESTAMPTZ NOT NULL,
   end_time TIMESTAMPTZ,
   duration INTEGER,
@@ -342,23 +343,7 @@ CREATE TRIGGER on_project_created
 -- Projects RLS Policies
 -- ============================================
 DROP POLICY IF EXISTS "Org members can view projects" ON projects;
-
--- Project Members RLS Policy (Updated to avoid recursion)
-DROP POLICY IF EXISTS "Project members can view member list" ON project_members;
-CREATE POLICY "Project members can view member list" ON project_members
-  FOR SELECT USING (
-    -- Admin in Org
-    EXISTS (
-      SELECT 1 FROM projects p
-      JOIN organization_members om ON p.organization_id = om.organization_id
-      WHERE p.id = project_members.project_id
-      AND om.user_id = auth.uid()
-      AND om.role = 'admin'
-    )
-    OR
-    -- Member in Project (Using function to avoid recursion)
-    is_project_member(project_id)
-  );
+DROP POLICY IF EXISTS "Project Access Policy" ON projects;
 
 CREATE POLICY "Project Access Policy" ON projects
   FOR SELECT USING (
@@ -407,93 +392,144 @@ CREATE POLICY "Admin/Editor can delete projects" ON projects
 -- ============================================
 -- Tasks RLS Policies
 -- ============================================
-CREATE POLICY "Org members can view tasks" ON tasks
+DROP POLICY IF EXISTS "Org members can view tasks" ON tasks;
+DROP POLICY IF EXISTS "Task Access Policy" ON tasks;
+
+-- Unified SELECT Policy
+CREATE POLICY "Task View Policy" ON tasks
   FOR SELECT USING (
+    -- Org Admin
     EXISTS (
       SELECT 1 FROM projects p
-      JOIN organization_members om ON om.organization_id = p.organization_id
-      WHERE p.id = tasks.project_id AND om.user_id = auth.uid()
+      JOIN organization_members om ON p.organization_id = om.organization_id
+      WHERE p.id = tasks.project_id
+      AND om.user_id = auth.uid()
+      AND om.role = 'admin'
     )
+    OR
+    -- Project Member
+    is_project_member(project_id)
   );
 
-CREATE POLICY "Admin/Editor can insert tasks" ON tasks
+-- Unified INSERT Policy
+CREATE POLICY "Task Insert Policy" ON tasks
   FOR INSERT WITH CHECK (
-    EXISTS (
+     is_project_member(project_id)
+     OR
+     EXISTS (
       SELECT 1 FROM projects p
-      JOIN organization_members om ON om.organization_id = p.organization_id
-      WHERE p.id = tasks.project_id AND om.user_id = auth.uid() AND om.role IN ('admin', 'editor')
+      JOIN organization_members om ON p.organization_id = om.organization_id
+      WHERE p.id = tasks.project_id
+      AND om.user_id = auth.uid()
+      AND om.role = 'admin'
     )
   );
 
-CREATE POLICY "Admin/Editor can update tasks" ON tasks
+-- Unified UPDATE Policy
+CREATE POLICY "Task Update Policy" ON tasks
   FOR UPDATE USING (
+    is_project_member(project_id)
+    OR
     EXISTS (
       SELECT 1 FROM projects p
-      JOIN organization_members om ON om.organization_id = p.organization_id
-      WHERE p.id = tasks.project_id AND om.user_id = auth.uid() AND om.role IN ('admin', 'editor')
+      JOIN organization_members om ON p.organization_id = om.organization_id
+      WHERE p.id = tasks.project_id
+      AND om.user_id = auth.uid()
+      AND om.role = 'admin'
     )
   );
 
--- Viewer can only update task status (handled at application level)
--- RLS allows update if user is member, field restriction in app
-CREATE POLICY "Viewer can update task status" ON tasks
-  FOR UPDATE USING (
-    EXISTS (
-      SELECT 1 FROM projects p
-      JOIN organization_members om ON om.organization_id = p.organization_id
-      WHERE p.id = tasks.project_id AND om.user_id = auth.uid() AND om.role = 'viewer'
-    )
-  );
-
-CREATE POLICY "Admin/Editor can delete tasks" ON tasks
+-- Unified DELETE Policy
+CREATE POLICY "Task Delete Policy" ON tasks
   FOR DELETE USING (
-    EXISTS (
+     EXISTS (
+        SELECT 1 FROM project_members pm
+        WHERE pm.project_id = tasks.project_id
+        AND pm.user_id = auth.uid()
+        AND pm.role = 'lead'
+     )
+     OR
+     EXISTS (
       SELECT 1 FROM projects p
-      JOIN organization_members om ON om.organization_id = p.organization_id
-      WHERE p.id = tasks.project_id AND om.user_id = auth.uid() AND om.role IN ('admin', 'editor')
+      JOIN organization_members om ON p.organization_id = om.organization_id
+      WHERE p.id = tasks.project_id
+      AND om.user_id = auth.uid()
+      AND om.role = 'admin'
     )
   );
 
 -- ============================================
 -- Time Logs RLS Policies
 -- ============================================
-CREATE POLICY "Org members can view time logs" ON time_logs
+DROP POLICY IF EXISTS "Org members can view time logs" ON time_logs;
+
+-- View Policy
+CREATE POLICY "TimeLog View Policy" ON time_logs
   FOR SELECT USING (
     EXISTS (
       SELECT 1 FROM tasks t
-      JOIN projects p ON p.id = t.project_id
-      JOIN organization_members om ON om.organization_id = p.organization_id
-      WHERE t.id = time_logs.task_id AND om.user_id = auth.uid()
+      WHERE t.id = time_logs.task_id
+      AND (
+         is_project_member(t.project_id)
+         OR
+         EXISTS (
+           SELECT 1 FROM projects p
+           JOIN organization_members om ON p.organization_id = om.organization_id
+           WHERE p.id = t.project_id
+           AND om.user_id = auth.uid()
+           AND om.role = 'admin'
+         )
+      )
     )
   );
 
-CREATE POLICY "Admin/Editor can insert time logs" ON time_logs
+-- Insert Policy
+CREATE POLICY "TimeLog Insert Policy" ON time_logs
   FOR INSERT WITH CHECK (
     EXISTS (
       SELECT 1 FROM tasks t
-      JOIN projects p ON p.id = t.project_id
-      JOIN organization_members om ON om.organization_id = p.organization_id
-      WHERE t.id = time_logs.task_id AND om.user_id = auth.uid() AND om.role IN ('admin', 'editor')
+      WHERE t.id = time_logs.task_id
+      AND (
+         is_project_member(t.project_id)
+         OR
+         EXISTS (
+           SELECT 1 FROM projects p
+           JOIN organization_members om ON p.organization_id = om.organization_id
+           WHERE p.id = t.project_id
+           AND om.user_id = auth.uid()
+           AND om.role = 'admin'
+         )
+      )
     )
   );
 
-CREATE POLICY "Admin/Editor can update time logs" ON time_logs
+-- Update Policy
+CREATE POLICY "TimeLog Update Policy" ON time_logs
   FOR UPDATE USING (
+    user_id = auth.uid()
+    OR
     EXISTS (
       SELECT 1 FROM tasks t
       JOIN projects p ON p.id = t.project_id
-      JOIN organization_members om ON om.organization_id = p.organization_id
-      WHERE t.id = time_logs.task_id AND om.user_id = auth.uid() AND om.role IN ('admin', 'editor')
+      JOIN organization_members om ON p.organization_id = om.organization_id
+      WHERE t.id = time_logs.task_id
+      AND om.user_id = auth.uid()
+      AND om.role = 'admin'
     )
   );
 
-CREATE POLICY "Admin/Editor can delete time logs" ON time_logs
+-- Delete Policy
+CREATE POLICY "TimeLog Delete Policy" ON time_logs
   FOR DELETE USING (
+    user_id = auth.uid()
+    OR
     EXISTS (
       SELECT 1 FROM tasks t
       JOIN projects p ON p.id = t.project_id
-      JOIN organization_members om ON om.organization_id = p.organization_id
-      WHERE t.id = time_logs.task_id AND om.user_id = auth.uid() AND om.role IN ('admin', 'editor')
+      JOIN organization_members om ON p.organization_id = om.organization_id
+      WHERE t.id = time_logs.task_id
+      AND om.user_id = auth.uid()
+      AND om.role = 'admin'
     )
   );
 

@@ -1,9 +1,15 @@
 -- ==============================================================================
--- GRAND RBAC FIX
--- Consolidates all Project-Level RBAC logic and fixes duplicate/legacy policies.
+-- GRAND RBAC FIX (CORRECTED)
+-- 1. Adds user_id to time_logs (Missing dependence).
+-- 2. Consolidates all Project-Level RBAC logic.
 -- ==============================================================================
 
--- 1. HELPER FUNCTIONS (SECURITY DEFINER to avoid recursion)
+-- 0. SCHEMA FIXES
+-- =========================================================
+ALTER TABLE time_logs 
+ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id) DEFAULT auth.uid();
+
+-- 1. HELPER FUNCTIONS
 -- =========================================================
 
 CREATE OR REPLACE FUNCTION get_user_project_ids()
@@ -78,6 +84,7 @@ CREATE POLICY "Project members can view member list" ON project_members
 
 -- 4. TASKS TABLE RLS
 -- =========================================================
+-- Clean old policies
 DROP POLICY IF EXISTS "Org members can view tasks" ON tasks;
 DROP POLICY IF EXISTS "Task Access Policy" ON tasks;
 DROP POLICY IF EXISTS "Users can manage tasks in their projects" ON tasks;
@@ -107,14 +114,8 @@ CREATE POLICY "Task View Policy" ON tasks
 -- Unified INSERT Policy
 CREATE POLICY "Task Insert Policy" ON tasks
   FOR INSERT WITH CHECK (
-     -- Member (Lead/Member only? or all? Let's say all members for now, or stick to Lead/Member as per standard)
-     -- Let's allow all members to create tasks for flexibility, or check exact role if needed.
-     -- Implementation plan said: "Project members can view tasks".
-     -- User requirement: "Project members".
-     -- Safe bet: All members.
      is_project_member(project_id)
      OR
-     -- Org Admin
      EXISTS (
       SELECT 1 FROM projects p
       JOIN organization_members om ON p.organization_id = om.organization_id
@@ -141,9 +142,7 @@ CREATE POLICY "Task Update Policy" ON tasks
 -- Unified DELETE Policy
 CREATE POLICY "Task Delete Policy" ON tasks
   FOR DELETE USING (
-     -- Only Lead or Admin?
-     -- Let's stick to: Project Member (Lead) OR Org Admin
-     -- Checking role in project_members
+     -- Project Lead
      EXISTS (
         SELECT 1 FROM project_members pm
         WHERE pm.project_id = tasks.project_id
@@ -151,6 +150,7 @@ CREATE POLICY "Task Delete Policy" ON tasks
         AND pm.role = 'lead'
      )
      OR
+     -- Org Admin
      EXISTS (
       SELECT 1 FROM projects p
       JOIN organization_members om ON p.organization_id = om.organization_id
@@ -161,14 +161,20 @@ CREATE POLICY "Task Delete Policy" ON tasks
   );
 
 
--- 5. TIME LOGS TABLE RLS
+-- 5. TIME LOGS TABLE RLS (Requires user_id column added above)
 -- =========================================================
 DROP POLICY IF EXISTS "Org members can view time logs" ON time_logs;
 DROP POLICY IF EXISTS "Admin/Editor can insert time logs" ON time_logs;
 DROP POLICY IF EXISTS "Admin/Editor can update time logs" ON time_logs;
 DROP POLICY IF EXISTS "Admin/Editor can delete time logs" ON time_logs;
+DROP POLICY IF EXISTS "TimeLog View Policy" ON time_logs;
+DROP POLICY IF EXISTS "TimeLog Insert Policy" ON time_logs;
+DROP POLICY IF EXISTS "TimeLog Update Policy" ON time_logs;
+DROP POLICY IF EXISTS "TimeLog Delete Policy" ON time_logs;
+DROP POLICY IF EXISTS "Member access" ON time_logs;
+DROP POLICY IF EXISTS "Access Policy" ON time_logs;
 
--- View Policy
+-- View Policy: Can see if Project Member OR Admin
 CREATE POLICY "TimeLog View Policy" ON time_logs
   FOR SELECT USING (
     EXISTS (
@@ -188,7 +194,7 @@ CREATE POLICY "TimeLog View Policy" ON time_logs
     )
   );
 
--- Insert Policy
+-- Insert Policy: Must be project member/admin
 CREATE POLICY "TimeLog Insert Policy" ON time_logs
   FOR INSERT WITH CHECK (
     EXISTS (
@@ -208,11 +214,9 @@ CREATE POLICY "TimeLog Insert Policy" ON time_logs
     )
   );
 
--- Update Policy
+-- Update Policy: Own logs OR Admin/Lead
 CREATE POLICY "TimeLog Update Policy" ON time_logs
   FOR UPDATE USING (
-    -- Only own logs or Admin/Lead?
-    -- Usually users update their own logs.
     user_id = auth.uid()
     OR
     EXISTS (
@@ -225,7 +229,7 @@ CREATE POLICY "TimeLog Update Policy" ON time_logs
     )
   );
 
--- Delete Policy
+-- Delete Policy: Own logs OR Admin/Lead
 CREATE POLICY "TimeLog Delete Policy" ON time_logs
   FOR DELETE USING (
     user_id = auth.uid()
