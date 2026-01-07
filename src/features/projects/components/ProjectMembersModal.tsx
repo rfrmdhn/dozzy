@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Badge, Button, Modal } from '../../../components';
-import { Project, User } from '../../../types';
+import type { Project, User } from '../../../types';
 import { useProjectMembers } from '../hooks/useProjectMembers';
 import { useOrganizationMembers } from '../hooks/useOrganizationMembers';
 
