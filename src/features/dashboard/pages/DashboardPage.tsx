@@ -4,8 +4,29 @@ import { useOrganizations } from '../../projects/hooks/useOrganizations';
 import { useAuth } from '../../../contexts/AuthContext';
 import { supabase } from '../../../lib/supabase';
 import type { OrganizationInput } from '../../../types';
-import { ClockIcon, BuildingIcon, CheckCircleIcon, EditIcon, TrashIcon, FolderIcon, PlusIcon, PlayIcon, PauseIcon, ArrowUpIcon, Button, Card, Input, Modal } from '../../../components';
+import { ClockIcon, BuildingIcon, CheckCircleIcon, EditIcon, TrashIcon, FolderIcon, PlusIcon, PlayIcon, PauseIcon, ArrowUpIcon, Button, Card, Input, Modal, Badge } from '../../../components';
 import '../styles/DashboardPage.css';
+
+// Types for dashboard data
+interface ActiveProject {
+    id: string;
+    name: string;
+    org_name: string;
+    org_id: string;
+    progress: number;
+    due_date?: string;
+}
+
+interface AgendaTask {
+    id: string;
+    title: string;
+    status: string;
+    priority: string;
+    project_name?: string;
+    due_date?: string;
+    due_time?: string;
+    type: 'design' | 'meeting' | 'admin' | 'task';
+}
 
 export default function DashboardPage() {
     const navigate = useNavigate();
@@ -13,13 +34,14 @@ export default function DashboardPage() {
     const { organizations, isLoading, create, update, remove } = useOrganizations();
     const [showModal, setShowModal] = useState(false);
     const [editingOrg, setEditingOrg] = useState<string | null>(null);
-    const [stats, setStats] = useState({ totalTime: 0, activeOrgs: 0, pendingTasks: 0 });
+    const [stats, setStats] = useState({ totalTime: 0, activeOrgs: 0, pendingTasks: 0, highPriorityCount: 0, weeklyChange: 0 });
     const [formData, setFormData] = useState<OrganizationInput>({
         name: '',
         description: '',
     });
-    const [todayTasks, setTodayTasks] = useState<Array<{ id: string; title: string; status: string; project_name?: string; due_date?: string }>>([]);
-    const [activeProjects, setActiveProjects] = useState<Array<{ id: string; name: string; org_name: string; org_id: string; progress: number; due_date?: string }>>([]);
+    const [todayTasks, setTodayTasks] = useState<AgendaTask[]>([]);
+    const [activeProjects, setActiveProjects] = useState<ActiveProject[]>([]);
+    const [orgStats, setOrgStats] = useState<Record<string, { projectCount: number; memberCount: number }>>({});
     const [timerRunning, setTimerRunning] = useState(false);
     const [timerSeconds, setTimerSeconds] = useState(0);
     const [timerDescription, setTimerDescription] = useState('');
@@ -38,6 +60,13 @@ export default function DashboardPage() {
                 .select('*', { count: 'exact', head: true })
                 .neq('status', 'done');
 
+            // Get high priority pending tasks
+            const { count: highPriorityCount } = await supabase
+                .from('tasks')
+                .select('*', { count: 'exact', head: true })
+                .neq('status', 'done')
+                .eq('priority', 'high');
+
             // Get time logs total
             const { data: timeLogs } = await supabase
                 .from('time_logs')
@@ -45,26 +74,70 @@ export default function DashboardPage() {
 
             const totalMinutes = timeLogs?.reduce((sum, log) => sum + (log.duration || 0), 0) || 0;
 
+            // Get time logged this week
+            const weekAgo = new Date();
+            weekAgo.setDate(weekAgo.getDate() - 7);
+            const { data: weekLogs } = await supabase
+                .from('time_logs')
+                .select('duration')
+                .gte('created_at', weekAgo.toISOString());
+
+            const weekMinutes = weekLogs?.reduce((sum, log) => sum + (log.duration || 0), 0) || 0;
+
+            // Calculate rough weekly change percentage
+            const previousWeekMinutes = totalMinutes - weekMinutes;
+            const weeklyChange = previousWeekMinutes > 0
+                ? Math.round(((weekMinutes - previousWeekMinutes) / previousWeekMinutes) * 100)
+                : weekMinutes > 0 ? 100 : 0;
+
             setStats({
                 totalTime: totalMinutes,
                 activeOrgs: organizations.length,
                 pendingTasks: taskCount || 0,
+                highPriorityCount: highPriorityCount || 0,
+                weeklyChange,
             });
         }
 
         fetchStats();
     }, [user, organizations.length]);
 
-    // Fetch today's tasks and active projects
+    // Fetch organization stats (project count per org)
+    useEffect(() => {
+        async function fetchOrgStats() {
+            if (!user || organizations.length === 0) return;
+
+            const orgIds = organizations.map(o => o.id);
+            const { data: projects } = await supabase
+                .from('projects')
+                .select('organization_id')
+                .in('organization_id', orgIds);
+
+            if (projects) {
+                const counts: Record<string, { projectCount: number; memberCount: number }> = {};
+                orgIds.forEach(id => {
+                    counts[id] = {
+                        projectCount: projects.filter(p => p.organization_id === id).length,
+                        memberCount: 1, // Single user app for now
+                    };
+                });
+                setOrgStats(counts);
+            }
+        }
+
+        fetchOrgStats();
+    }, [user, organizations]);
+
+    // Fetch today's tasks and active projects with real progress
     useEffect(() => {
         async function fetchTodayData() {
             if (!user) return;
 
-            // Get tasks due today
+            // Get tasks due today or overdue
             const today = new Date().toISOString().split('T')[0];
             const { data: tasks } = await supabase
                 .from('tasks')
-                .select('id, title, status, due_date, projects(name)')
+                .select('id, title, status, priority, due_date, labels, projects(name)')
                 .lte('due_date', today + 'T23:59:59')
                 .neq('status', 'done')
                 .limit(5);
@@ -72,35 +145,71 @@ export default function DashboardPage() {
             if (tasks) {
                 setTodayTasks(tasks.map(t => {
                     const proj = t.projects as unknown as { name: string } | null;
+                    // Determine task type from labels or priority
+                    let type: AgendaTask['type'] = 'task';
+                    const labels = t.labels || [];
+                    if (labels.includes('design') || labels.includes('Design')) type = 'design';
+                    else if (labels.includes('meeting') || labels.includes('Meeting')) type = 'meeting';
+                    else if (labels.includes('admin') || labels.includes('Admin')) type = 'admin';
+
+                    // Format due time
+                    let due_time = '';
+                    if (t.due_date) {
+                        const date = new Date(t.due_date);
+                        due_time = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+                    }
+
                     return {
                         id: t.id,
                         title: t.title,
                         status: t.status,
+                        priority: t.priority,
                         project_name: proj?.name,
-                        due_date: t.due_date
+                        due_date: t.due_date,
+                        due_time,
+                        type,
                     };
                 }));
             }
 
-            // Get active projects
+            // Get active projects with real progress calculation
             const { data: projects } = await supabase
                 .from('projects')
-                .select('id, name, due_date, organizations(id, name)')
-                .eq('status', 'active')
+                .select('id, name, end_date, organizations(id, name)')
                 .limit(5);
 
             if (projects) {
-                setActiveProjects(projects.map(p => {
-                    const org = p.organizations as unknown as { id: string; name: string } | null;
-                    return {
-                        id: p.id,
-                        name: p.name,
-                        org_name: org?.name || 'Unknown',
-                        org_id: org?.id || '',
-                        progress: Math.floor(Math.random() * 100),
-                        due_date: p.due_date
-                    };
-                }));
+                const projectsWithProgress: ActiveProject[] = await Promise.all(
+                    projects.map(async (p) => {
+                        const org = p.organizations as unknown as { id: string; name: string } | null;
+
+                        // Calculate real progress from tasks
+                        const { count: totalTasks } = await supabase
+                            .from('tasks')
+                            .select('*', { count: 'exact', head: true })
+                            .eq('project_id', p.id);
+
+                        const { count: doneTasks } = await supabase
+                            .from('tasks')
+                            .select('*', { count: 'exact', head: true })
+                            .eq('project_id', p.id)
+                            .eq('status', 'done');
+
+                        const progress = totalTasks && totalTasks > 0
+                            ? Math.round((doneTasks || 0) / totalTasks * 100)
+                            : 0;
+
+                        return {
+                            id: p.id,
+                            name: p.name,
+                            org_name: org?.name || 'Unknown',
+                            org_id: org?.id || '',
+                            progress,
+                            due_date: p.end_date,
+                        };
+                    })
+                );
+                setActiveProjects(projectsWithProgress);
             }
         }
 
@@ -141,6 +250,21 @@ export default function DashboardPage() {
     function formatDate(dateStr?: string) {
         if (!dateStr) return '';
         return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    }
+
+    function getProgressColor(progress: number): string {
+        if (progress >= 70) return 'var(--color-primary-500)';
+        if (progress >= 40) return 'var(--color-purple-500, #8b5cf6)';
+        return 'var(--color-warning, #f97316)';
+    }
+
+    function getTypeBadgeVariant(type: AgendaTask['type']): 'primary' | 'warning' | 'info' | 'neutral' {
+        switch (type) {
+            case 'design': return 'primary';
+            case 'meeting': return 'warning';
+            case 'admin': return 'neutral';
+            default: return 'info';
+        }
     }
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -196,7 +320,7 @@ export default function DashboardPage() {
                         {greeting}, {userName}
                     </h1>
                     <p className="dashboard-subtitle">
-                        You have {stats.pendingTasks} tasks pending. Stay productive!
+                        You have {stats.pendingTasks} tasks due today. Stay productive!
                     </p>
                 </div>
                 <div className="dashboard-header-right">
@@ -209,7 +333,7 @@ export default function DashboardPage() {
                             minute: '2-digit'
                         })}</span>
                     </div>
-                    <Button variant="primary" onClick={() => setShowModal(true)}>
+                    <Button variant="primary" onClick={() => navigate('/projects')}>
                         <PlusIcon size={16} /> New Task
                     </Button>
                 </div>
@@ -220,102 +344,112 @@ export default function DashboardPage() {
                 <Card className="stat-card">
                     <div className="stat-card-header">
                         <span className="stat-card-label">Hours Logged</span>
-                        <div className="stat-card-icon" style={{ background: 'var(--color-primary-100)', color: 'var(--color-primary-500)' }}><ClockIcon size={20} /></div>
+                        <div className="stat-card-icon stat-card-icon--primary"><ClockIcon size={20} /></div>
                     </div>
                     <div className="stat-card-value">{formatTime(stats.totalTime)}</div>
-                    <div className="stat-card-change positive"><ArrowUpIcon size={14} /> +12% this week</div>
+                    <div className={`stat-card-change ${stats.weeklyChange >= 0 ? 'positive' : 'negative'}`}>
+                        <ArrowUpIcon size={14} /> {stats.weeklyChange >= 0 ? '+' : ''}{stats.weeklyChange}% this week
+                    </div>
                 </Card>
 
                 <Card className="stat-card">
                     <div className="stat-card-header">
                         <span className="stat-card-label">Active Orgs</span>
-                        <div className="stat-card-icon" style={{ background: 'var(--color-info-light)', color: 'var(--color-info)' }}><BuildingIcon size={20} /></div>
+                        <div className="stat-card-icon stat-card-icon--info"><BuildingIcon size={20} /></div>
                     </div>
                     <div className="stat-card-value">{stats.activeOrgs}</div>
-                    <div className="stat-card-change">Across all workspaces</div>
+                    <div className="stat-card-change">Across {organizations.length > 1 ? `${organizations.length} workspaces` : '1 workspace'}</div>
                 </Card>
 
                 <Card className="stat-card">
                     <div className="stat-card-header">
                         <span className="stat-card-label">Pending Tasks</span>
-                        <div className="stat-card-icon" style={{ background: 'var(--color-warning-light)', color: 'var(--color-warning)' }}><CheckCircleIcon size={20} /></div>
+                        <div className="stat-card-icon stat-card-icon--warning"><CheckCircleIcon size={20} /></div>
                     </div>
                     <div className="stat-card-value">{stats.pendingTasks}</div>
-                    <div className="stat-card-change">{stats.pendingTasks > 2 ? 'High Priority' : 'On track'}</div>
+                    <div className="stat-card-change">{stats.highPriorityCount} High Priority</div>
                 </Card>
             </div>
 
-            {/* Organizations Section */}
-            <div className="section">
-                <div className="section-header">
-                    <h2 className="section-title">Your Organizations</h2>
-                    {organizations.length > 0 && (
-                        <Button variant="link" onClick={() => navigate('/organizations')} className="view-all-btn">
-                            View All
-                        </Button>
-                    )}
-                </div>
+            {/* Main Content Grid */}
+            <div className="dashboard-content-grid">
+                {/* Left Side: Orgs + Projects */}
+                <div className="dashboard-main-content">
+                    {/* Organizations Section */}
+                    <div className="section">
+                        <div className="section-header">
+                            <h2 className="section-title">Your Organizations</h2>
+                            {organizations.length > 0 && (
+                                <Button variant="link" onClick={() => navigate('/organizations')} className="view-all-btn">
+                                    View All
+                                </Button>
+                            )}
+                        </div>
 
-                {isLoading ? (
-                    <div className="empty-state">
-                        <div className="loading-spinner" />
-                    </div>
-                ) : organizations.length === 0 ? (
-                    <div className="empty-state">
-                        <div className="empty-state-icon"><BuildingIcon size={48} /></div>
-                        <h3 className="empty-state-title">No organizations yet</h3>
-                        <p className="empty-state-description">
-                            Create your first organization to start managing projects and tasks.
-                        </p>
-                        <Button variant="primary" onClick={() => setShowModal(true)}>
-                            <PlusIcon size={16} /> Create Organization
-                        </Button>
-                    </div>
-                ) : (
-                    <div className="org-grid">
-                        {organizations.slice(0, 4).map((org) => (
-                            <Card
-                                key={org.id}
-                                className="org-card"
-                                onClick={() => navigate(`/organizations/${org.id}/projects`)}
-                            >
-                                <div className="org-card-image">
-                                    <div className="org-card-icon"><BuildingIcon size={24} /></div>
-                                </div>
-                                <div className="org-card-content">
-                                    <div className="org-card-name">{org.name}</div>
-                                    {org.description && (
-                                        <div className="org-card-description">{org.description}</div>
-                                    )}
-                                    <div className="org-card-meta">
-                                        <span className="org-card-meta-item">Active</span>
-                                    </div>
-                                </div>
-                                <div className="org-card-actions" onClick={(e) => e.stopPropagation()}>
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => handleEdit(org)}
+                        {isLoading ? (
+                            <div className="empty-state">
+                                <div className="loading-spinner" />
+                            </div>
+                        ) : organizations.length === 0 ? (
+                            <div className="empty-state">
+                                <div className="empty-state-icon"><BuildingIcon size={48} /></div>
+                                <h3 className="empty-state-title">No organizations yet</h3>
+                                <p className="empty-state-description">
+                                    Create your first organization to start managing projects and tasks.
+                                </p>
+                                <Button variant="primary" onClick={() => setShowModal(true)}>
+                                    <PlusIcon size={16} /> Create Organization
+                                </Button>
+                            </div>
+                        ) : (
+                            <div className="org-grid">
+                                {organizations.slice(0, 2).map((org, index) => (
+                                    <Card
+                                        key={org.id}
+                                        className="org-card"
+                                        onClick={() => navigate(`/organizations/${org.id}/projects`)}
                                     >
-                                        <EditIcon size={16} />
-                                    </Button>
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={(e: React.MouseEvent) => handleDelete(org.id, e)}
-                                    >
-                                        <TrashIcon size={16} />
-                                    </Button>
-                                </div>
-                            </Card>
-                        ))}
+                                        <div className={`org-card-image org-card-image--${index % 2 === 0 ? 'dark' : 'teal'}`}>
+                                            <div className="org-card-icon"><BuildingIcon size={24} /></div>
+                                        </div>
+                                        <div className="org-card-content">
+                                            <div className="org-card-name">{org.name}</div>
+                                            {org.description && (
+                                                <div className="org-card-description">{org.description}</div>
+                                            )}
+                                            <div className="org-card-meta">
+                                                <span className="org-card-meta-item">
+                                                    <span className="meta-dot meta-dot--success"></span>
+                                                    {orgStats[org.id]?.projectCount || 0} Projects
+                                                </span>
+                                                <span className="org-card-meta-item">
+                                                    <BuildingIcon size={12} />
+                                                    {orgStats[org.id]?.memberCount || 1} Member
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div className="org-card-actions" onClick={(e) => e.stopPropagation()}>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => handleEdit(org)}
+                                            >
+                                                <EditIcon size={16} />
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={(e: React.MouseEvent) => handleDelete(org.id, e)}
+                                            >
+                                                <TrashIcon size={16} />
+                                            </Button>
+                                        </div>
+                                    </Card>
+                                ))}
+                            </div>
+                        )}
                     </div>
-                )}
-            </div>
 
-            {/* Dashboard Grid: Agenda + Timer Side Panel */}
-            <div className="dashboard-grid">
-                <div className="dashboard-main">
                     {/* Active Projects Table */}
                     <div className="section">
                         <div className="section-header">
@@ -338,20 +472,26 @@ export default function DashboardPage() {
                                     <div
                                         key={project.id}
                                         className="table-row"
-                                        onClick={() => navigate(`/organizations/${project.org_id}/projects/${project.id}/tasks`)}
+                                        onClick={() => navigate(`/projects/${project.id}/tasks`)}
                                     >
                                         <span className="project-name">{project.name}</span>
                                         <span className="project-org">{project.org_name}</span>
                                         <span className="project-progress">
                                             <div className="progress-bar">
-                                                <div className="progress-fill" style={{ width: `${project.progress}%` }}></div>
+                                                <div
+                                                    className="progress-fill"
+                                                    style={{
+                                                        width: `${project.progress}%`,
+                                                        backgroundColor: getProgressColor(project.progress)
+                                                    }}
+                                                ></div>
                                             </div>
                                             <span>{project.progress}%</span>
                                         </span>
                                         <span className="project-due">{formatDate(project.due_date) || 'No date'}</span>
                                     </div>
                                 ))}
-                                <Button variant="link" className="view-all-btn" onClick={() => navigate('/organizations')}>
+                                <Button variant="link" className="view-all-btn" onClick={() => navigate('/projects')}>
                                     View All Projects
                                 </Button>
                             </div>
@@ -359,38 +499,50 @@ export default function DashboardPage() {
                     </div>
                 </div>
 
+                {/* Right Sidebar: Agenda + Timer */}
                 <div className="dashboard-sidebar">
                     {/* Today's Agenda */}
-                    <Card className="sidebar-card">
-                        <h3 className="sidebar-card-title">Today's Agenda</h3>
+                    <div className="sidebar-section">
+                        <div className="sidebar-header-row">
+                            <h3 className="sidebar-title">Today's Agenda</h3>
+                        </div>
                         {todayTasks.length === 0 ? (
-                            <div className="empty-state-small">
-                                <CheckCircleIcon size={24} />
-                                <span>No tasks due today</span>
-                            </div>
+                            <Card className="empty-agenda-card">
+                                <div className="empty-state-small">
+                                    <CheckCircleIcon size={24} />
+                                    <span>No tasks due today</span>
+                                </div>
+                            </Card>
                         ) : (
                             <div className="agenda-list">
                                 {todayTasks.map(task => (
-                                    <div key={task.id} className="agenda-item">
+                                    <Card key={task.id} className="agenda-card">
                                         <input type="checkbox" className="agenda-checkbox" />
                                         <div className="agenda-content">
                                             <div className="agenda-title">{task.title}</div>
                                             <div className="agenda-meta">
-                                                <span className={`status-badge status-${task.status}`}>{task.status}</span>
-                                                {task.due_date && <span>Due {formatDate(task.due_date)}</span>}
+                                                <Badge variant={getTypeBadgeVariant(task.type)} size="sm">
+                                                    {task.type.charAt(0).toUpperCase() + task.type.slice(1)}
+                                                </Badge>
+                                                {task.due_time && (
+                                                    <span className={`agenda-time ${task.priority === 'high' ? 'agenda-time--urgent' : ''}`}>
+                                                        • {task.priority === 'high' ? 'Due ' : ''}{task.due_time}
+                                                    </span>
+                                                )}
                                             </div>
                                         </div>
-                                    </div>
+                                    </Card>
                                 ))}
                             </div>
                         )}
-                    </Card>
+                    </div>
 
                     {/* Quick Timer */}
                     <Card className="timer-card">
                         <div className="timer-header">
                             <ClockIcon size={20} />
                             <span>Track Time</span>
+                            <button className="timer-menu-btn">•••</button>
                         </div>
                         <Input
                             className="timer-input"

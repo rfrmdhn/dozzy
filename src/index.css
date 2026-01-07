@@ -578,6 +578,33 @@ select.input {
   color: var(--color-error);
 }
 
+/* New badge variants for dashboard */
+.badge-primary {
+  background: var(--color-primary-100);
+  color: var(--color-primary-600);
+}
+
+.badge-warning {
+  background: #fce7f3;
+  color: #be185d;
+}
+
+.badge-info {
+  background: var(--color-info-light);
+  color: var(--color-info);
+}
+
+.badge-neutral {
+  background: var(--color-gray-100);
+  color: var(--color-gray-600);
+}
+
+/* Badge sizes */
+.badge-sm {
+  padding: 2px var(--space-2);
+  font-size: 10px;
+}
+
 /* Label badge */
 .label-badge {
   display: inline-flex;
