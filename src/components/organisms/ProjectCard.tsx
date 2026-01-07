@@ -1,7 +1,9 @@
 import { FolderIcon, CalendarIcon, EditIcon, TrashIcon, Badge, Button } from '../atoms';
 
+import type { Project, ProjectStatus } from '../../types';
+
 interface ProjectCardProps {
-    project: any; // Using any for now to avoid rapid type refactoring, ideally Project
+    project: Project;
     progress: number;
     onClick: () => void;
     onEdit: (e: React.MouseEvent) => void;
@@ -10,17 +12,19 @@ interface ProjectCardProps {
 }
 
 export function ProjectCard({ project, progress, onClick, onEdit, onDelete, showOrgName }: ProjectCardProps) {
-    const getBadgeVariant = (prog: number) => {
-        if (prog > 70) return 'active';
-        if (prog > 30) return 'in_progress';
-        return 'draft';
+    const getStatusBadge = (status: ProjectStatus) => {
+        const config: Record<ProjectStatus, { variant: any; label: string }> = {
+            active: { variant: 'active', label: 'Active' },
+            in_progress: { variant: 'in_progress', label: 'In Progress' },
+            completed: { variant: 'done', label: 'Completed' },
+            on_hold: { variant: 'warning', label: 'On Hold' },
+            archived: { variant: 'neutral', label: 'Archived' }
+        };
+        // Fallback or default
+        return config[status] || { variant: 'draft', label: status };
     };
 
-    const getBadgeLabel = (prog: number) => {
-        if (prog > 70) return 'Active';
-        if (prog > 30) return 'In Progress';
-        return 'Draft';
-    };
+    const statusBadge = getStatusBadge(project.status || 'in_progress');
 
     return (
         <div className="project-card" onClick={onClick}>
@@ -30,13 +34,14 @@ export function ProjectCard({ project, progress, onClick, onEdit, onDelete, show
                     <h3 className="project-card-name">{project.name}</h3>
                     {showOrgName && (
                         <span className="project-card-org">
-                            {project.organizations?.name || 'Unknown Org'}
+                            {/* @ts-ignore - dynamic join may not be in type yet if nested */}
+                            {(project as any).organizations?.name || 'Unknown Org'}
                         </span>
                     )}
                     <span className="project-card-category">{project.description || 'No description'}</span>
                 </div>
-                <Badge variant={getBadgeVariant(progress)}>
-                    {getBadgeLabel(progress)}
+                <Badge variant={statusBadge.variant}>
+                    {statusBadge.label}
                 </Badge>
             </div>
 

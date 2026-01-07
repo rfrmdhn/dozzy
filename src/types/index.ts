@@ -39,11 +39,13 @@ export interface Project {
     description: string | null;
     start_date: string | null;
     end_date: string | null;
+    status: ProjectStatus;
     type: ProjectType;
     created_at: string;
     updated_at: string;
 }
 
+export type ProjectStatus = 'active' | 'in_progress' | 'completed' | 'on_hold' | 'archived';
 export type ProjectType = 'kanban' | 'list';
 export type TaskStatus = 'todo' | 'in_progress' | 'done';
 export type TaskPriority = 'low' | 'medium' | 'high';
@@ -91,6 +93,7 @@ export interface ProjectInput {
     description?: string;
     start_date?: string;
     end_date?: string;
+    status?: ProjectStatus;
     type?: ProjectType;
 }
 

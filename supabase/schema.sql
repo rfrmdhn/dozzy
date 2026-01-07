@@ -58,6 +58,7 @@ CREATE TABLE IF NOT EXISTS projects (
   description TEXT,
   start_date DATE,
   end_date DATE,
+  status VARCHAR(50) DEFAULT 'in_progress' CHECK (status IN ('active', 'in_progress', 'completed', 'on_hold', 'archived')),
   type VARCHAR(50) DEFAULT 'software',
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
