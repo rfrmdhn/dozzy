@@ -3,10 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { useOrganizations } from '../../projects/hooks/useOrganizations';
 import { useAuth } from '../../../contexts/AuthContext';
 import { supabase } from '../../../lib/supabase';
-import type { OrganizationInput } from '../../../types';
 import { ClockIcon, BuildingIcon, CheckCircleIcon, FolderIcon, PlusIcon, PlayIcon, PauseIcon, ArrowUpIcon, Button, Card, Input, Modal, Badge } from '../../../components';
 import { OrganizationCard } from '../../../components/molecules';
 import '../styles/DashboardPage.css';
+
+// Local type for org form (extends schema which lacks description)
+interface OrgFormData {
+    name: string;
+    description: string;
+}
 
 // Types for dashboard data
 interface ActiveProject {
@@ -36,7 +41,7 @@ export default function DashboardPage() {
     const [showModal, setShowModal] = useState(false);
     const [editingOrg, setEditingOrg] = useState<string | null>(null);
     const [stats, setStats] = useState({ totalTime: 0, activeOrgs: 0, pendingTasks: 0, highPriorityCount: 0, weeklyChange: 0 });
-    const [formData, setFormData] = useState<OrganizationInput>({
+    const [formData, setFormData] = useState<OrgFormData>({
         name: '',
         description: '',
     });
@@ -278,7 +283,7 @@ export default function DashboardPage() {
         handleCloseModal();
     };
 
-    const handleEdit = (org: { id: string; name: string; description: string | null }) => {
+    const handleEdit = (org: any) => {
         setEditingOrg(org.id);
         setFormData({ name: org.name, description: org.description || '' });
         setShowModal(true);
@@ -409,7 +414,7 @@ export default function DashboardPage() {
                                         key={org.id}
                                         id={org.id}
                                         name={org.name}
-                                        description={org.description}
+                                        description={(org as any).description || ''}
                                         variant={index % 2 === 0 ? 'dark' : 'teal'}
                                         projectCount={orgStats[org.id]?.projectCount || 0}
                                         memberCount={orgStats[org.id]?.memberCount || 1}

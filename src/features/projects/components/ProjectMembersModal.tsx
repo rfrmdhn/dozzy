@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Badge, Button, Modal } from '../../../components';
-import type { Project } from '../../../types';
+import type { Project, ProjectMember } from '../../../types';
 import { useProjectMembers } from '../hooks/useProjectMembers';
 import { useOrganizationMembers } from '../hooks/useOrganizationMembers';
 
@@ -21,6 +21,15 @@ const UserPlusIcon = ({ size = 20 }: { size?: number }) => (
     </svg>
 );
 
+// Extended member type for UI rendering (with joined user data)
+interface ProjectMemberWithUser extends ProjectMember {
+    user?: {
+        id: string;
+        username?: string;
+        email?: string;
+    };
+}
+
 interface ProjectMembersModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -29,7 +38,7 @@ interface ProjectMembersModalProps {
 
 export function ProjectMembersModal({ isOpen, onClose, project }: ProjectMembersModalProps) {
     const { members, isLoading, addMember, removeMember } = useProjectMembers(project.id);
-    const { members: orgMembers } = useOrganizationMembers(project.organization_id);
+    const { members: orgMembers } = useOrganizationMembers(project.organization_id ?? undefined);
     const [selectedUserId, setSelectedUserId] = useState('');
     const [submitting, setSubmitting] = useState(false);
 
@@ -54,6 +63,9 @@ export function ProjectMembersModal({ isOpen, onClose, project }: ProjectMembers
         }
     };
 
+    // Cast members to extended type for UI
+    const membersWithUser = members as ProjectMemberWithUser[];
+
     return (
         <Modal isOpen={isOpen} onClose={onClose} title={`Members of ${project.name}`}>
             <div className="space-y-6">
@@ -70,7 +82,7 @@ export function ProjectMembersModal({ isOpen, onClose, project }: ProjectMembers
                             <option value="">Select a user...</option>
                             {availableUsers.map(om => (
                                 <option key={om.id} value={om.user_id}>
-                                    {om.user?.username || om.user?.email || 'Unknown User'} ({om.role})
+                                    {(om as any).user?.username || (om as any).user?.email || 'Unknown User'} ({om.role})
                                 </option>
                             ))}
                         </select>
@@ -99,12 +111,12 @@ export function ProjectMembersModal({ isOpen, onClose, project }: ProjectMembers
                                 <tr>
                                     <td colSpan={3} className="px-4 py-4 text-center text-gray-500">Loading members...</td>
                                 </tr>
-                            ) : members.length === 0 ? (
+                            ) : membersWithUser.length === 0 ? (
                                 <tr>
                                     <td colSpan={3} className="px-4 py-4 text-center text-gray-500">No members yet</td>
                                 </tr>
                             ) : (
-                                members.map(m => (
+                                membersWithUser.map(m => (
                                     <tr key={m.id}>
                                         <td className="px-4 py-3">
                                             <div className="font-medium text-gray-900">{m.user?.username || 'Unknown'}</div>

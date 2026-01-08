@@ -17,7 +17,7 @@ export default function ProjectsPage() {
 
     // Store hooks
     const { projects, isLoading, fetchProjects, createProject } = useProjectStore();
-    const { organizations, fetchOrganizations, setCurrentOrg } = useOrgStore();
+    const { organizations, fetchOrganizations } = useOrgStore();
     const { user } = useAuthStore();
 
     const [showModal, setShowModal] = useState(false);

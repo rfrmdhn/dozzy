@@ -1,13 +1,13 @@
 import { Modal, Input, Select } from '../molecules';
 import { Button } from '../atoms';
-import type { Organization, ProjectInput } from '../../types';
+import type { Organization, Project } from '../../types';
 
 interface ProjectModalProps {
     isOpen: boolean;
     onClose: () => void;
     isEditing: boolean;
-    formData: ProjectInput;
-    setFormData: (data: ProjectInput) => void;
+    formData: Partial<Project>;
+    setFormData: (data: Partial<Project>) => void;
     onSubmit: (e: React.FormEvent) => void;
     organizations?: Organization[];
     showOrgSelect?: boolean;
@@ -41,7 +41,7 @@ export function ProjectModal({
                 <Input
                     label="Name"
                     placeholder="Project name"
-                    value={formData.name}
+                    value={formData.name || ''}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     required
                     autoFocus
@@ -50,7 +50,7 @@ export function ProjectModal({
                 {showOrgSelect && (
                     <Select
                         label="Organization"
-                        value={formData.organization_id}
+                        value={formData.organization_id || ''}
                         onChange={(e) => setFormData({ ...formData, organization_id: e.target.value })}
                         options={organizations.map(org => ({ value: org.id, label: org.name }))}
                         placeholder="Select an organization"
@@ -80,9 +80,9 @@ export function ProjectModal({
                     />
                     <Input
                         type="date"
-                        label="End Date"
-                        value={formData.end_date || ''}
-                        onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+                        label="Due Date"
+                        value={formData.due_date || ''}
+                        onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
                         containerClassName="flex-1"
                     />
                 </div>

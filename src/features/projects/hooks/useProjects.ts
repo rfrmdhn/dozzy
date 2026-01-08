@@ -1,7 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../../lib/supabase';
-import type { Project, ProjectInput } from '../../../types';
+import type { Project } from '../../../types';
 import { useAuth } from '../../../contexts/AuthContext';
+
+// Alias for insert type
+type ProjectInput = Partial<Project> & { name: string; organization_id: string };
 
 interface UseProjectsReturn {
     projects: Project[];

@@ -1,7 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../../lib/supabase';
-import type { Organization, OrganizationInput } from '../../../types';
+import type { Organization } from '../../../types';
 import { useAuth } from '../../../contexts/AuthContext';
+
+// Local input type since schema lacks description
+interface OrgInputLocal {
+    name: string;
+    description?: string;
+}
 
 type OrgRole = 'admin' | 'editor' | 'viewer';
 
@@ -13,8 +19,8 @@ interface UseOrganizationsReturn {
     organizations: OrganizationWithRole[];
     isLoading: boolean;
     error: Error | null;
-    create: (input: OrganizationInput) => Promise<Organization | null>;
-    update: (id: string, input: Partial<OrganizationInput>) => Promise<boolean>;
+    create: (input: OrgInputLocal) => Promise<Organization | null>;
+    update: (id: string, input: Partial<OrgInputLocal>) => Promise<boolean>;
     remove: (id: string) => Promise<boolean>;
     refresh: () => Promise<void>;
     getUserRole: (orgId: string) => OrgRole | null;
@@ -80,7 +86,7 @@ export function useOrganizations(): UseOrganizationsReturn {
     }, [fetchOrganizations]);
 
     const create = useCallback(
-        async (input: OrganizationInput): Promise<Organization | null> => {
+        async (input: OrgInputLocal): Promise<Organization | null> => {
             if (!user) return null;
 
             try {
@@ -109,7 +115,7 @@ export function useOrganizations(): UseOrganizationsReturn {
     );
 
     const update = useCallback(
-        async (id: string, input: Partial<OrganizationInput>): Promise<boolean> => {
+        async (id: string, input: Partial<OrgInputLocal>): Promise<boolean> => {
             try {
                 const { error } = await supabase
                     .from('organizations')

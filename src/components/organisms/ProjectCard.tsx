@@ -13,18 +13,17 @@ interface ProjectCardProps {
 
 export function ProjectCard({ project, progress, onClick, onEdit, onDelete, showOrgName }: ProjectCardProps) {
     const getStatusBadge = (status: ProjectStatus) => {
-        const config: Record<ProjectStatus, { variant: any; label: string }> = {
+        const config: Record<NonNullable<ProjectStatus>, { variant: any; label: string }> = {
             active: { variant: 'active', label: 'Active' },
-            in_progress: { variant: 'in_progress', label: 'In Progress' },
             completed: { variant: 'done', label: 'Completed' },
             on_hold: { variant: 'warning', label: 'On Hold' },
             archived: { variant: 'neutral', label: 'Archived' }
         };
         // Fallback or default
-        return config[status] || { variant: 'draft', label: status };
+        return (status && config[status]) || { variant: 'draft', label: status || 'Draft' };
     };
 
-    const statusBadge = getStatusBadge(project.status || 'in_progress');
+    const statusBadge = getStatusBadge(project.status);
 
     return (
         <div className="project-card" onClick={onClick}>
@@ -65,7 +64,7 @@ export function ProjectCard({ project, progress, onClick, onEdit, onDelete, show
             <div className="project-card-footer">
                 <div className="project-card-date">
                     <CalendarIcon size={14} />
-                    {project.end_date ? new Date(project.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'No due date'}
+                    {project.due_date ? new Date(project.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'No due date'}
                 </div>
                 <div className="project-card-actions" onClick={(e) => e.stopPropagation()}>
                     <Button variant="ghost" size="sm" onClick={onEdit} className="px-1">

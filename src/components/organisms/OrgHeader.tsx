@@ -1,8 +1,11 @@
 import { BuildingIcon, CalendarIcon, UsersIcon, EditIcon, Button } from '../atoms';
 import type { Organization } from '../../types';
 
+// Extended type for rendering
+type OrgWithDescription = Organization & { description?: string | null };
+
 interface OrgHeaderProps {
-    organization: Organization | null;
+    organization: OrgWithDescription | null;
     orgId?: string;
     projectCount: number;
     onEditOrg: () => void;
