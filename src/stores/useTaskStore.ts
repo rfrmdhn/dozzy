@@ -1,186 +1,151 @@
 import { create } from 'zustand';
-import { supabase } from '../lib/supabase';
+import { taskRepository, type TaskWithSection } from '../lib/repositories';
 import type { Database } from '../types/supabase';
 
-// Helper types
-type Task = Database['public']['Tables']['tasks']['Row'];
+type TaskUpdate = Database['public']['Tables']['tasks']['Update'];
 type TaskInsert = Database['public']['Tables']['tasks']['Insert'];
-
-// Standardized structure for UI
-export type TaskWithSection = Task & {
-    section_id: string | null;
-    order_index: number;
-    custom_field_values?: Record<string, any>; // Map fieldId -> value
-};
 
 interface TaskState {
     tasks: TaskWithSection[];
     isLoading: boolean;
+    error: Error | null;
 
+    // Actions
     fetchProjectTasks: (projectId: string) => Promise<void>;
     createTask: (
         task: Partial<TaskInsert>,
         projectId: string,
         sectionId?: string,
-        customFieldValues?: Record<string, any>
-    ) => Promise<void>;
+        customFieldValues?: Record<string, unknown>
+    ) => Promise<boolean>;
     updateTask: (
         taskId: string,
-        updates: Partial<Task>,
-        customFieldValues?: Record<string, any>
-    ) => Promise<void>;
-    moveTask: (taskId: string, projectId: string, newSectionId: string | null, newIndex: number) => Promise<void>;
+        updates: Partial<TaskUpdate>,
+        customFieldValues?: Record<string, unknown>
+    ) => Promise<boolean>;
+    deleteTask: (taskId: string, projectId: string) => Promise<boolean>;
+    moveTask: (
+        taskId: string,
+        projectId: string,
+        newSectionId: string | null,
+        newIndex: number
+    ) => Promise<boolean>;
+    clearError: () => void;
 }
 
 export const useTaskStore = create<TaskState>((set, get) => ({
     tasks: [],
     isLoading: false,
+    error: null,
 
     fetchProjectTasks: async (projectId) => {
-        set({ isLoading: true });
-        try {
-            // Join tasks with project info
-            // TODO: Also fetch custom_field_values? specific to this project's org
-            const { data, error } = await supabase
-                .from('project_tasks')
-                .select(`
-                    section_id,
-                    order_index,
-                    task:tasks (*)
-                `)
-                .eq('project_id', projectId);
+        set({ isLoading: true, error: null });
 
-            if (error) throw error;
+        const { tasks, error } = await taskRepository.fetchByProject(projectId);
 
-            // TODO: Fetch all custom field values for these lists of tasks to display in grid? 
-            // For now, simple mapping
-            const formattedTasks: TaskWithSection[] = (data || []).map((item: any) => ({
-                ...item.task,
-                section_id: item.section_id,
-                order_index: item.order_index,
-                custom_field_values: {} // Placeholder until we fetch them
-            }));
-
-            set({ tasks: formattedTasks, isLoading: false });
-        } catch (error) {
+        if (error) {
+            set({ isLoading: false, error });
             console.error('Error fetching tasks:', error);
-            set({ isLoading: false });
+            return;
         }
+
+        set({ tasks, isLoading: false });
     },
 
     createTask: async (task, projectId, sectionId, customFieldValues) => {
-        try {
-            // 1. Create Task
-            const { data: newTask, error: taskError } = await supabase
-                .from('tasks')
-                .insert({
-                    ...task,
-                    organization_id: (task as any).organization_id, // Ensure this is passed
-                })
-                .select()
-                .single();
+        const taskInsert: TaskInsert = {
+            title: task.title || 'Untitled Task',
+            organization_id: task.organization_id,
+            description: task.description,
+            status: task.status || 'todo',
+            priority: task.priority || 'medium',
+            due_date: task.due_date,
+            assignee_id: task.assignee_id,
+            author_id: task.author_id,
+            tags: task.tags,
+        };
 
-            if (taskError) throw taskError;
+        const { data, error } = await taskRepository.create(
+            taskInsert,
+            projectId,
+            sectionId,
+            customFieldValues
+        );
 
-            // 2. Link to Project
-            const { error: linkError } = await supabase
-                .from('project_tasks')
-                .insert({
-                    project_id: projectId,
-                    task_id: newTask.id,
-                    section_id: sectionId || null
-                });
-
-            if (linkError) throw linkError;
-
-            // 3. Insert Custom Fields if any
-            if (customFieldValues && Object.keys(customFieldValues).length > 0) {
-                const cfInserts = Object.entries(customFieldValues).map(([fieldId, value]) => ({
-                    custom_field_id: fieldId,
-                    entity_type: 'task',
-                    entity_id: newTask.id,
-                    value: value
-                }));
-
-                const { error: cfError } = await supabase
-                    .from('custom_field_values')
-                    .insert(cfInserts as any); // Cast for strict typing issues
-
-                if (cfError) console.error('Error saving custom fields:', cfError);
-            }
-
-            // Refresh
-            get().fetchProjectTasks(projectId);
-        } catch (error) {
+        if (error) {
+            set({ error });
             console.error('Error creating task:', error);
+            return false;
         }
+
+        // Refresh tasks list
+        if (data) {
+            await get().fetchProjectTasks(projectId);
+        }
+
+        return true;
     },
 
     updateTask: async (taskId, updates, customFieldValues) => {
-        try {
-            // Optimistic update for standard fields
-            const currentTasks = get().tasks;
-            const updatedTasks = currentTasks.map(t =>
-                t.id === taskId ? { ...t, ...updates } : t
-            );
-            set({ tasks: updatedTasks });
+        // Optimistic update
+        const currentTasks = get().tasks;
+        const updatedTasks = currentTasks.map((t) =>
+            t.id === taskId ? { ...t, ...updates } : t
+        );
+        set({ tasks: updatedTasks });
 
-            // 1. Update standard fields
-            if (Object.keys(updates).length > 0) {
-                const { error } = await supabase
-                    .from('tasks')
-                    .update(updates)
-                    .eq('id', taskId);
+        const { error } = await taskRepository.update(taskId, updates, customFieldValues);
 
-                if (error) {
-                    set({ tasks: currentTasks }); // Revert
-                    throw error;
-                }
-            }
-
-            // 2. Update Custom Fields (Upsert)
-            if (customFieldValues && Object.keys(customFieldValues).length > 0) {
-                // For each field, we upsert
-                const upserts = Object.entries(customFieldValues).map(([fieldId, value]) => ({
-                    custom_field_id: fieldId,
-                    entity_type: 'task',
-                    entity_id: taskId,
-                    value: value
-                }));
-
-                // Supabase upsert requires unique constraint on (custom_field_id, entity_id) which we have
-                const { error: cfError } = await supabase
-                    .from('custom_field_values')
-                    .upsert(upserts as any, { onConflict: 'custom_field_id, entity_id' });
-
-                if (cfError) console.error('Error updating custom fields:', cfError);
-            }
-
-        } catch (error) {
+        if (error) {
+            // Revert on error
+            set({ tasks: currentTasks, error });
             console.error('Error updating task:', error);
+            return false;
         }
+
+        return true;
+    },
+
+    deleteTask: async (taskId, projectId) => {
+        // Optimistic update
+        const currentTasks = get().tasks;
+        set({ tasks: currentTasks.filter((t) => t.id !== taskId) });
+
+        const { success, error } = await taskRepository.delete(taskId);
+
+        if (error || !success) {
+            // Revert on error
+            set({ tasks: currentTasks, error });
+            console.error('Error deleting task:', error);
+            return false;
+        }
+
+        // Optionally refresh to ensure consistency
+        await get().fetchProjectTasks(projectId);
+        return true;
     },
 
     moveTask: async (taskId, projectId, newSectionId, newIndex) => {
-        try {
-            // Optimistic update could go here, but reordering is complex state-wise.
-            // For now, rely on refresh or simple optimistic swap if critical.
+        const { success, error } = await taskRepository.move(
+            taskId,
+            projectId,
+            newSectionId,
+            newIndex
+        );
 
-            const { error } = await supabase
-                .rpc('move_task', {
-                    p_task_id: taskId,
-                    p_project_id: projectId,
-                    p_new_section_id: newSectionId,
-                    p_new_index: newIndex
-                });
-
-            if (error) throw error;
-
-            // Refresh
-            get().fetchProjectTasks(projectId);
-
-        } catch (error) {
+        if (error || !success) {
+            set({ error });
             console.error('Error moving task:', error);
+            return false;
         }
-    }
+
+        // Refresh to get new order
+        await get().fetchProjectTasks(projectId);
+        return true;
+    },
+
+    clearError: () => set({ error: null }),
 }));
+
+// Re-export type for convenience
+export type { TaskWithSection };

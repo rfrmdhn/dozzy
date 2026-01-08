@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { useTaskStore } from '../../../stores/useTaskStore';
-import { useProjectStore } from '../../../stores/useProjectStore';
+import { useTaskStore, type TaskWithSection } from '../../../stores/useTaskStore';
+import { useProjectStore, type ProjectWithOrg } from '../../../stores/useProjectStore';
 import { useOrgStore } from '../../../stores/useOrgStore';
-import { supabase } from '../../../lib/supabase';
-import type { Organization, TaskWithSection } from '../../../types';
+import type { TaskFormData, TaskPriority } from '../../../types';
 import { SortIcon, PlusIcon, CloseIcon, Button, Input, Modal } from '../../../components';
 import { BoardView } from '../components/BoardView';
 import { ListView } from '../components/ListView';
@@ -14,37 +13,32 @@ import { TaskModal } from '../components/TaskModal';
 import { TimeLogModal } from '../components/TimeLogModal';
 import '../styles/TasksPage.css';
 
-// Type shim to handle legacy component expectations
-type UI_Task = TaskWithSection;
+const DEFAULT_FORM_DATA: TaskFormData = {
+    title: '',
+    description: '',
+    status: 'todo',
+    priority: 'medium',
+    due_date: '',
+    custom_field_values: {},
+};
 
 export default function TasksPage() {
     const { projectId } = useParams<{ projectId: string }>();
 
     // Global Stores
-    const { tasks, isLoading, fetchProjectTasks, createTask, updateTask } = useTaskStore();
-    useProjectStore(); // Subscribe to project changes
+    const { tasks, isLoading, error: storeError, fetchProjectTasks, createTask, updateTask, deleteTask } = useTaskStore();
+    const { currentProject, fetchProjectDetails } = useProjectStore();
     const { customFields } = useOrgStore();
 
     // Local State
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const [project, setProject] = useState<any | null>(null);
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const [_organization, setOrganization] = useState<Organization | null>(null);
+    const [project, setProject] = useState<ProjectWithOrg | null>(null);
     const [showModal, setShowModal] = useState(false);
     const [showTimeModal, setShowTimeModal] = useState(false);
-    const [selectedTask, setSelectedTask] = useState<UI_Task | null>(null);
+    const [selectedTask, setSelectedTask] = useState<TaskWithSection | null>(null);
     const [editingTask, setEditingTask] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const [formData, setFormData] = useState<any>({
-        title: '',
-        description: '',
-        status: 'todo',
-        priority: 'medium',
-        due_date: '',
-        custom_field_values: {}
-    });
+    const [formData, setFormData] = useState<TaskFormData>(DEFAULT_FORM_DATA);
 
     const [viewMode, setViewMode] = useState<'list' | 'board'>('list');
     const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -52,70 +46,103 @@ export default function TasksPage() {
     const [showFilterMenu, setShowFilterMenu] = useState(false);
     const [showSortMenu, setShowSortMenu] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
-    const [error, setError] = useState<Error | null>(null);
 
-    // Initial Fetch
+    // Fetch project and tasks on mount
     useEffect(() => {
         if (projectId) {
             fetchProjectTasks(projectId);
-
-            supabase
-                .from('projects')
-                .select('*, organizations(*)')
-                .eq('id', projectId)
-                .single()
-                .then(({ data, error }) => {
-                    if (data) {
-                        setProject(data);
-                        setOrganization(data.organizations as any);
-                    }
-                    if (error) setError(error);
-                });
+            fetchProjectDetails(projectId);
         }
-    }, [projectId, fetchProjectTasks]);
+    }, [projectId, fetchProjectTasks, fetchProjectDetails]);
+
+    // Sync project from store
+    useEffect(() => {
+        if (currentProject) {
+            setProject(currentProject);
+        }
+    }, [currentProject]);
 
     const completedCount = tasks.filter((t) => t.status === 'done').length;
     const progress = tasks.length > 0 ? Math.round((completedCount / tasks.length) * 100) : 0;
 
-    const filteredTasks = tasks.filter((t) =>
-        t.title.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    // Filter tasks
+    const filteredTasks = tasks.filter((t) => {
+        const matchesSearch = t.title.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesStatus = filterStatus === 'all' || t.status === filterStatus;
+        return matchesSearch && matchesStatus;
+    });
+
+    // Sort tasks
+    const sortedTasks = [...filteredTasks].sort((a, b) => {
+        switch (sortBy) {
+            case 'priority': {
+                const priorityOrder = { urgent: 0, high: 1, medium: 2, low: 3 };
+                return (priorityOrder[a.priority || 'medium'] || 2) - (priorityOrder[b.priority || 'medium'] || 2);
+            }
+            case 'name':
+                return a.title.localeCompare(b.title);
+            case 'date':
+            default:
+                return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        }
+    });
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!projectId) return;
 
-        try {
-            const { custom_field_values, ...taskData } = formData;
+        const { custom_field_values, ...taskData } = formData;
 
-            if (editingTask) {
-                await updateTask(editingTask, taskData, custom_field_values);
-            } else {
-                await createTask({ ...taskData, organization_id: project?.organization_id }, projectId, undefined, custom_field_values);
-            }
+        let success: boolean;
+        if (editingTask) {
+            success = await updateTask(editingTask, {
+                title: taskData.title,
+                description: taskData.description ? { text: taskData.description } : null,
+                status: taskData.status,
+                priority: taskData.priority,
+                due_date: taskData.due_date || null,
+            }, custom_field_values);
+        } else {
+            success = await createTask(
+                {
+                    title: taskData.title,
+                    description: taskData.description ? { text: taskData.description } : null,
+                    status: taskData.status,
+                    priority: taskData.priority,
+                    due_date: taskData.due_date || null,
+                    organization_id: project?.organization_id,
+                },
+                projectId,
+                undefined,
+                custom_field_values
+            );
+        }
+
+        if (success) {
             handleCloseModal();
-        } catch (err) {
-            console.error('Task operation failed', err);
         }
     };
 
-    const handleEdit = (task: UI_Task) => {
+    const handleEdit = (task: TaskWithSection) => {
         setEditingTask(task.id);
+        const description = typeof task.description === 'object' && task.description !== null
+            ? (task.description as { text?: string }).text || ''
+            : '';
         setFormData({
             title: task.title,
-            description: task.description || '',
-            status: task.status,
-            priority: task.priority,
+            description,
+            status: task.status || 'todo',
+            priority: task.priority || 'medium',
             due_date: task.due_date?.split('T')[0] || '',
-            custom_field_values: (task as any).custom_field_values || {}
+            custom_field_values: task.custom_field_values || {},
         });
         setShowModal(true);
     };
 
-    const handleDelete = async (_id: string) => {
+    const handleDelete = async (id: string) => {
+        if (!projectId) return;
         if (confirm('Delete this task?')) {
-            // TODO: await remove(_id);
-            console.warn('Remove task not implemented in store yet');
+            await deleteTask(id, projectId);
         }
     };
 
@@ -127,17 +154,10 @@ export default function TasksPage() {
     const handleCloseModal = () => {
         setShowModal(false);
         setEditingTask(null);
-        setFormData({
-            title: '',
-            description: '',
-            status: 'todo',
-            priority: 'medium',
-            due_date: '',
-            custom_field_values: {}
-        });
+        setFormData(DEFAULT_FORM_DATA);
     };
 
-    const handleOpenTimeLog = (task: UI_Task) => {
+    const handleOpenTimeLog = (task: TaskWithSection) => {
         setSelectedTask(task);
         setShowTimeModal(true);
     };
@@ -166,6 +186,8 @@ export default function TasksPage() {
             </Button>
         </>
     );
+
+    const error = storeError;
 
     return (
         <div className="page-container">
@@ -210,7 +232,7 @@ export default function TasksPage() {
                 <div className="empty-state">
                     <div className="loading-spinner" />
                 </div>
-            ) : filteredTasks.length === 0 ? (
+            ) : sortedTasks.length === 0 ? (
                 <div className="empty-state">
                     <div className="empty-state-icon"><SortIcon size={48} /></div>
                     <h3 className="empty-state-title">
@@ -229,7 +251,7 @@ export default function TasksPage() {
                 </div>
             ) : viewMode === 'list' ? (
                 <ListView
-                    tasks={filteredTasks}
+                    tasks={sortedTasks}
                     onUpdateStatus={updateStatus}
                     onEdit={handleEdit}
                     onDelete={handleDelete}
@@ -237,7 +259,7 @@ export default function TasksPage() {
                 />
             ) : (
                 <BoardView
-                    tasks={filteredTasks}
+                    tasks={sortedTasks}
                     onUpdateStatus={updateStatus}
                     onEdit={handleEdit}
                     onLogTime={handleOpenTimeLog}
@@ -249,7 +271,7 @@ export default function TasksPage() {
                 onClose={handleCloseModal}
                 onSubmit={handleSubmit}
                 formData={formData}
-                setFormData={setFormData}
+                setFormData={setFormData as (data: TaskFormData) => void}
                 isEditing={!!editingTask}
                 taskId={editingTask}
                 customFields={customFields}

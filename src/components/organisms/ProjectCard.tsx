@@ -1,9 +1,10 @@
 import { FolderIcon, CalendarIcon, EditIcon, TrashIcon, Badge, Button } from '../atoms';
-
-import type { Project, ProjectStatus } from '../../types';
+import { getProjectStatusBadge } from '../../lib/utils/status';
+import { formatDate } from '../../lib/utils/date';
+import type { ProjectWithOrg, ProjectStatus } from '../../types';
 
 interface ProjectCardProps {
-    project: Project;
+    project: ProjectWithOrg;
     progress: number;
     onClick: () => void;
     onEdit: (e: React.MouseEvent) => void;
@@ -12,18 +13,7 @@ interface ProjectCardProps {
 }
 
 export function ProjectCard({ project, progress, onClick, onEdit, onDelete, showOrgName }: ProjectCardProps) {
-    const getStatusBadge = (status: ProjectStatus) => {
-        const config: Record<NonNullable<ProjectStatus>, { variant: any; label: string }> = {
-            active: { variant: 'active', label: 'Active' },
-            completed: { variant: 'done', label: 'Completed' },
-            on_hold: { variant: 'warning', label: 'On Hold' },
-            archived: { variant: 'neutral', label: 'Archived' }
-        };
-        // Fallback or default
-        return (status && config[status]) || { variant: 'draft', label: status || 'Draft' };
-    };
-
-    const statusBadge = getStatusBadge(project.status);
+    const statusBadge = getProjectStatusBadge(project.status);
 
     return (
         <div className="project-card" onClick={onClick}>
@@ -33,13 +23,12 @@ export function ProjectCard({ project, progress, onClick, onEdit, onDelete, show
                     <h3 className="project-card-name">{project.name}</h3>
                     {showOrgName && (
                         <span className="project-card-org">
-                            {/* @ts-ignore - dynamic join may not be in type yet if nested */}
-                            {(project as any).organizations?.name || 'Unknown Org'}
+                            {project.organization?.name || 'Unknown Org'}
                         </span>
                     )}
                     <span className="project-card-category">{project.description || 'No description'}</span>
                 </div>
-                <Badge variant={statusBadge.variant}>
+                <Badge variant={statusBadge.variant as 'active' | 'done' | 'warning' | 'neutral'}>
                     {statusBadge.label}
                 </Badge>
             </div>
@@ -64,7 +53,7 @@ export function ProjectCard({ project, progress, onClick, onEdit, onDelete, show
             <div className="project-card-footer">
                 <div className="project-card-date">
                     <CalendarIcon size={14} />
-                    {project.due_date ? new Date(project.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'No due date'}
+                    {project.due_date ? formatDate(project.due_date) : 'No due date'}
                 </div>
                 <div className="project-card-actions" onClick={(e) => e.stopPropagation()}>
                     <Button variant="ghost" size="sm" onClick={onEdit} className="px-1">
