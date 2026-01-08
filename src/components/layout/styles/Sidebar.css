@@ -1,0 +1,170 @@
+.sidebar {
+    width: 240px;
+    background: var(--color-gray-50);
+    border-right: 1px solid var(--color-gray-200);
+    height: calc(100vh - 56px);
+    /* Subtract TopBar height */
+    position: fixed;
+    top: 56px;
+    left: 0;
+    z-index: 40;
+    /* Ensure it stays above main content if needed, but below modals */
+    overflow-y: auto;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar-content {
+    padding: var(--space-4) var(--space-3);
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.nav-group {
+    margin-bottom: var(--space-2);
+}
+
+/* Section Header with Actions */
+.nav-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 var(--space-2);
+    margin-bottom: var(--space-2);
+}
+
+.nav-section-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--color-gray-500);
+    letter-spacing: 0.5px;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.nav-section-title.hoverable:hover {
+    color: var(--color-primary-600);
+}
+
+.icon-btn-small {
+    background: none;
+    border: none;
+    padding: 2px;
+    color: var(--color-gray-500);
+    cursor: pointer;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.icon-btn-small:hover {
+    background: var(--color-gray-200);
+    color: var(--color-primary-600);
+}
+
+.nav-tree-item {
+    margin-bottom: 2px;
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: 6px var(--space-2);
+    color: var(--color-gray-600);
+    text-decoration: none;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.1s, color 0.1s;
+    user-select: none;
+    line-height: 20px;
+    border-radius: var(--radius-md);
+}
+
+.nav-item:hover {
+    background: var(--color-gray-200);
+    color: var(--color-gray-900);
+}
+
+.nav-item.active {
+    background: var(--color-primary-50);
+    color: var(--color-primary-700);
+    font-weight: 500;
+}
+
+.nav-item.active svg {
+    color: var(--color-primary-600);
+}
+
+/* Parent active state (expanded but not the current page) */
+.nav-item.active-parent {
+    color: var(--color-gray-900);
+    font-weight: 500;
+}
+
+/* Indentation Levels */
+.nav-item.level-1 {
+    padding-left: var(--space-4);
+}
+
+.nav-item.level-2 {
+    padding-left: var(--space-8);
+    font-size: 13.5px;
+}
+
+.nav-item.level-3 {
+    padding-left: 3rem;
+    /* space-12 */
+    font-size: 13px;
+    padding-top: 4px;
+    padding-bottom: 4px;
+}
+
+.nav-item-icon {
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-gray-400);
+    margin-right: -4px;
+    transition: transform 0.1s;
+}
+
+.nav-item:hover .nav-item-icon {
+    color: var(--color-gray-600);
+}
+
+.truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+}
+
+.sidebar-divider {
+    height: 1px;
+    background: var(--color-gray-200);
+    margin: var(--space-4) 0;
+}
+
+.sidebar-bottom {
+    margin-top: auto;
+    padding-top: var(--space-2);
+    border-top: 1px solid var(--color-gray-200);
+}
+
+.empty-state {
+    color: var(--color-gray-400);
+    font-style: italic;
+    cursor: default;
+}
+
+.empty-state:hover {
+    background: none;
+    color: var(--color-gray-400);
+}

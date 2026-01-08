@@ -14,9 +14,20 @@ export interface User {
 
 export interface Organization {
     id: string;
-    user_id: string;
     name: string;
     description: string | null;
+    created_at: string;
+    updated_at: string;
+}
+
+export type OrgRole = 'admin' | 'editor' | 'viewer';
+
+export interface OrganizationMember {
+    id: string;
+    organization_id: string;
+    user_id: string;
+    role: OrgRole;
+    invited_by: string | null;
     created_at: string;
     updated_at: string;
 }
@@ -28,20 +39,40 @@ export interface Project {
     description: string | null;
     start_date: string | null;
     end_date: string | null;
+    status: ProjectStatus;
+    type: ProjectType;
+    tasks?: { status: TaskStatus }[];
     created_at: string;
     updated_at: string;
 }
 
+export type ProjectStatus = 'active' | 'in_progress' | 'completed' | 'on_hold' | 'archived';
+export type ProjectType = 'kanban' | 'list';
+export type ProjectRole = 'lead' | 'member' | 'viewer';
+
+export interface ProjectMember {
+    id: string;
+    project_id: string;
+    user_id: string;
+    role: ProjectRole;
+    created_at: string;
+    user?: User; // Nested user
+}
+
 export type TaskStatus = 'todo' | 'in_progress' | 'done';
 export type TaskPriority = 'low' | 'medium' | 'high';
+export type TaskType = 'task' | 'bug';
 
 export interface Task {
     id: string;
     project_id: string;
+    parent_id: string | null;
+    assignee_id: string | null;
     title: string;
     description: string | null;
     status: TaskStatus;
     priority: TaskPriority;
+    type: TaskType;
     labels: string[];
     due_date: string | null;
     created_at: string;
@@ -74,6 +105,8 @@ export interface ProjectInput {
     description?: string;
     start_date?: string;
     end_date?: string;
+    status?: ProjectStatus;
+    type?: ProjectType;
 }
 
 export interface TaskInput {
@@ -82,6 +115,9 @@ export interface TaskInput {
     description?: string;
     status?: TaskStatus;
     priority?: TaskPriority;
+    type?: TaskType;
+    parent_id?: string;
+    assignee_id?: string;
     labels?: string[];
     due_date?: string;
 }
