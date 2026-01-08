@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTaskStore, type TaskWithSection } from '../../../stores/useTaskStore';
 import { useProjectStore, type ProjectWithOrg } from '../../../stores/useProjectStore';
@@ -62,22 +62,22 @@ export default function TasksPage() {
         }
     }, [currentProject]);
 
-    const completedCount = tasks.filter((t) => t.status === 'done').length;
-    const progress = tasks.length > 0 ? Math.round((completedCount / tasks.length) * 100) : 0;
+    const completedCount = useMemo(() => tasks.filter((t) => t.status === 'done').length, [tasks]);
+    const progress = useMemo(() => tasks.length > 0 ? Math.round((completedCount / tasks.length) * 100) : 0, [tasks.length, completedCount]);
 
     // Filter tasks
-    const filteredTasks = tasks.filter((t) => {
+    const filteredTasks = useMemo(() => tasks.filter((t) => {
         const matchesSearch = t.title.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesStatus = filterStatus === 'all' || t.status === filterStatus;
         return matchesSearch && matchesStatus;
-    });
+    }), [tasks, searchQuery, filterStatus]);
 
     // Sort tasks
-    const sortedTasks = [...filteredTasks].sort((a, b) => {
+    const sortedTasks = useMemo(() => [...filteredTasks].sort((a, b) => {
         switch (sortBy) {
             case 'priority': {
-                const priorityOrder = { urgent: 0, high: 1, medium: 2, low: 3 };
-                return (priorityOrder[a.priority || 'medium'] || 2) - (priorityOrder[b.priority || 'medium'] || 2);
+                const priorityOrder: Record<string, number> = { urgent: 0, high: 1, medium: 2, low: 3 };
+                return (priorityOrder[a.priority || 'medium'] ?? 2) - (priorityOrder[b.priority || 'medium'] ?? 2);
             }
             case 'name':
                 return a.title.localeCompare(b.title);
@@ -85,7 +85,7 @@ export default function TasksPage() {
             default:
                 return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
         }
-    });
+    }), [filteredTasks, sortBy]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
