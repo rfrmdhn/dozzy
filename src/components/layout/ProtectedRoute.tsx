@@ -1,5 +1,6 @@
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import './styles/ProtectedRoute.css';
 
 export default function ProtectedRoute() {
     const { isAuthenticated, isLoading } = useAuth();
@@ -9,15 +10,7 @@ export default function ProtectedRoute() {
             <div className="loading-container">
                 <div className="loading-spinner" />
                 <p className="text-muted mt-4">Loading...</p>
-                <style>{`
-          .loading-container {
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-          }
-        `}</style>
+
             </div>
         );
     }
