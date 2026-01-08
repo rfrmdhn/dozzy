@@ -1,4 +1,4 @@
-import type { TaskWithSection, TaskPriority } from '../../../types';
+import type { TaskWithSection } from '../../../types';
 import { CalendarIcon, ClockIcon, EditIcon, TrashIcon, FlagIcon, Button, Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../../components';
 
 interface ListViewProps {
@@ -9,26 +9,9 @@ interface ListViewProps {
     onLogTime: (task: TaskWithSection) => void;
 }
 
-export function ListView({ tasks, onUpdateStatus, onEdit, onDelete, onLogTime }: ListViewProps) {
-    const getStatusBadgeClass = (status: string | null) => {
-        switch (status) {
-            case 'todo': return 'badge-todo';
-            case 'in_progress': return 'badge-in-progress';
-            case 'done': return 'badge-done';
-            default: return '';
-        }
-    };
+import { getStatusBadgeClass, getStatusLabel, getPriorityColor } from '../../../lib/utils/status';
 
-    const getPriorityIcon = (priority: TaskPriority) => {
-        const colors: Record<string, string> = {
-            high: 'var(--color-error)',
-            medium: 'var(--color-warning)',
-            low: 'var(--color-success)',
-            urgent: 'var(--color-error)'
-        };
-        const colorKey = priority || 'medium';
-        return <FlagIcon size={14} style={{ color: colors[colorKey] || 'var(--color-gray-400)' }} />;
-    };
+export function ListView({ tasks, onUpdateStatus, onEdit, onDelete, onLogTime }: ListViewProps) {
 
     return (
         <Table>
@@ -63,16 +46,12 @@ export function ListView({ tasks, onUpdateStatus, onEdit, onDelete, onLogTime }:
                         </TableCell>
                         <TableCell>
                             <span className={`badge ${getStatusBadgeClass(task.status)}`}>
-                                {task.status === 'todo'
-                                    ? 'To Do'
-                                    : task.status === 'in_progress'
-                                        ? 'In Progress'
-                                        : 'Done'}
+                                {getStatusLabel(task.status)}
                             </span>
                         </TableCell>
                         <TableCell>
                             <span className={`priority-indicator priority-${task.priority}`}>
-                                {getPriorityIcon(task.priority)} {task.priority}
+                                <FlagIcon size={14} style={{ color: getPriorityColor(task.priority) }} /> {task.priority}
                             </span>
                         </TableCell>
                         <TableCell>

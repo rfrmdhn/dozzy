@@ -1,7 +1,7 @@
 import { FolderIcon, CalendarIcon, EditIcon, TrashIcon, Badge, Button } from '../atoms';
 import { getProjectStatusBadge } from '../../lib/utils/status';
 import { formatDate } from '../../lib/utils/date';
-import type { ProjectWithOrg, ProjectStatus } from '../../types';
+import type { ProjectWithOrg } from '../../types';
 
 interface ProjectCardProps {
     project: ProjectWithOrg;

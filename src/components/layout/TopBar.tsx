@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { SearchIcon, BellIcon, HelpCircleIcon, GridIcon, LogOutIcon, UserIcon, SettingsIcon } from '../atoms/icons';
+import { SearchIcon, HelpCircleIcon, GridIcon, LogOutIcon, UserIcon, SettingsIcon } from '../atoms/icons';
+import { NotificationCenter } from '../organisms';
 import './styles/TopBar.css';
 
 export default function TopBar() {
@@ -58,7 +59,7 @@ export default function TopBar() {
                     <SearchIcon size={16} className="search-icon" />
                     <input type="text" placeholder="Search" className="search-input" />
                 </div>
-                <button className="btn btn-icon" title="Notifications"><BellIcon size={20} /></button>
+                <NotificationCenter />
                 <button className="btn btn-icon" title="Help"><HelpCircleIcon size={20} /></button>
 
                 <div className="user-menu-container" ref={menuRef}>

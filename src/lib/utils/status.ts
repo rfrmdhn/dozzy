@@ -130,3 +130,17 @@ export const PROJECT_STATUS_OPTIONS = [
     { value: 'completed', label: 'Completed' },
     { value: 'archived', label: 'Archived' },
 ] as const;
+
+/**
+ * Get initials from a full name
+ */
+export function getInitials(name: string): string {
+    if (!name) return '';
+    return name
+        .split(' ')
+        .map(n => n[0])
+        .slice(0, 2)
+        .join('')
+        .toUpperCase();
+}
+

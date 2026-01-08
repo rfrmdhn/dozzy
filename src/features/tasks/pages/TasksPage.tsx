@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { useTaskStore, type TaskWithSection } from '../../../stores/useTaskStore';
 import { useProjectStore, type ProjectWithOrg } from '../../../stores/useProjectStore';
 import { useOrgStore } from '../../../stores/useOrgStore';
-import type { TaskFormData, TaskPriority } from '../../../types';
+import type { TaskFormData } from '../../../types';
 import { SortIcon, PlusIcon, CloseIcon, Button, Input, Modal } from '../../../components';
 import { BoardView } from '../components/BoardView';
 import { ListView } from '../components/ListView';

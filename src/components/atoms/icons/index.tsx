@@ -43,7 +43,9 @@ import {
     RefreshCw,
     Timer,
     BarChart,
-    FileText
+    FileText,
+    AlertCircle,
+    Info
 } from 'lucide-react';
 
 interface IconProps extends SVGProps<SVGSVGElement> {
@@ -109,3 +111,5 @@ export const ClipboardListIcon = withIcon(ClipboardList);
 export const RefreshIcon = withIcon(RefreshCw);
 export const TimerIcon = withIcon(Timer);
 export const ChartBarIcon = withIcon(BarChart);
+export const AlertIcon = withIcon(AlertCircle);
+export const InfoIcon = withIcon(Info);

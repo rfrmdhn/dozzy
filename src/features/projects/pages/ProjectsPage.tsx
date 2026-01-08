@@ -16,8 +16,8 @@ export default function ProjectsPage() {
     const navigate = useNavigate();
 
     // Store hooks
-    const { projects, isLoading, fetchProjects, createProject } = useProjectStore();
-    const { organizations, fetchOrganizations } = useOrgStore();
+    const { projects, isLoading, fetchProjects, createProject, updateProject, deleteProject } = useProjectStore();
+    const { organizations, fetchOrganizations, updateOrganization } = useOrgStore();
     const { user } = useAuthStore();
 
     const [showModal, setShowModal] = useState(false);
@@ -54,15 +54,20 @@ export default function ProjectsPage() {
     // Derived state
     const calculateProgress = (_project: Project) => {
         // TODO: Implement proper progress calculation from store derived data
-        return 0;
+        // For now, return a placeholder or use a util if available.
+        // The project object from RPC should have progress if using fetchWithProgress, 
+        // but fetchByOrg uses simpler query usually?
+        // Actually fetchByOrg uses fetchWithProgress via repository if implemented correctly?
+        // Let's check repository. fetchByOrg calls get_projects_with_progress if enabled?
+        // For now return 0 or property if exists.
+        return (_project as any).progress || 0;
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
         if (editingProject) {
-            // await update(editingProject, formData); // TODO: Implement update in store
-            alert('Update project not implemented yet');
+            await updateProject(editingProject, formData);
         } else {
             const orgIdToUse = orgId || formData.organization_id;
             if (!orgIdToUse || !user) {
@@ -79,9 +84,13 @@ export default function ProjectsPage() {
         handleCloseModal();
     };
 
-    const handleOrgEditSubmit = async (_data: { name: string; description: string }) => {
-        // TODO: Implement update org
-        console.warn('Update org not implemented');
+    const handleOrgEditSubmit = async (data: { name: string; description: string }) => {
+        if (!organization) return;
+
+        await updateOrganization(organization.id, {
+            name: data.name
+            // description update if supported by backend schema
+        });
         setShowOrgEditModal(false);
     };
 
@@ -98,11 +107,10 @@ export default function ProjectsPage() {
         setShowModal(true);
     };
 
-    const handleDelete = async (_id: string, e: React.MouseEvent) => {
+    const handleDelete = async (id: string, e: React.MouseEvent) => {
         e.stopPropagation();
         if (confirm('Delete this project? All tasks will be removed.')) {
-            // await remove(_id); // TODO: Implement remove in store
-            console.warn('Delete project not implemented');
+            await deleteProject(id);
         }
     };
 

@@ -1,6 +1,7 @@
 import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-pangea/dnd';
-import type { TaskWithSection, TaskPriority } from '../../../types';
+import type { TaskWithSection } from '../../../types';
 import { CalendarIcon, ClockIcon, FlagIcon, Button, Card } from '../../../components';
+import { getPriorityColor } from '../../../lib/utils/status';
 import '../styles/BoardView.css';
 
 interface BoardViewProps {
@@ -31,15 +32,6 @@ export function BoardView({ tasks, onUpdateStatus, onEdit, onLogTime }: BoardVie
 
         const newStatus = destination.droppableId;
         onUpdateStatus(draggableId, newStatus);
-    };
-
-    const getPriorityColor = (priority: TaskPriority) => {
-        switch (priority) {
-            case 'high': return 'var(--color-error)';
-            case 'medium': return 'var(--color-warning)';
-            case 'low': return 'var(--color-success)';
-            default: return 'var(--color-gray-400)';
-        }
     };
 
     return (
