@@ -44,12 +44,14 @@ export default function UsersPage() {
             {/* Header */}
             <div className="flex justify-between items-start">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                    <div className="flex items-center gap-3">
                         <div className="p-2 bg-indigo-100 rounded-lg text-indigo-600">
                             <UsersIcon size={24} />
                         </div>
-                        Team Members
-                    </h1>
+                        <h1 className="text-2xl font-bold text-gray-900">
+                            Team Members
+                        </h1>
+                    </div>
                     <p className="mt-1 text-gray-500">
                         Manage users and roles for <span className="font-medium text-gray-900">{currentOrg?.name}</span>.
                     </p>
