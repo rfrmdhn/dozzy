@@ -1,125 +1,46 @@
-// Dozzy - Type Definitions
+import type { Database } from './supabase';
 
-// ============================================
-// Database Entity Types
-// ============================================
+export type Organization = Database['public']['Tables']['organizations']['Row'];
+export type Project = Database['public']['Tables']['projects']['Row'];
+export type Task = Database['public']['Tables']['tasks']['Row'];
+export type ProjectTask = Database['public']['Tables']['project_tasks']['Row'];
+export type ProjectSection = Database['public']['Tables']['project_sections']['Row'];
+export type Comment = Database['public']['Tables']['comments']['Row'];
+export type CustomField = Database['public']['Tables']['custom_fields']['Row'];
+export type CustomFieldValue = Database['public']['Tables']['custom_field_values']['Row'];
+export type Team = Database['public']['Tables']['teams']['Row'];
+export type ActivityLog = Database['public']['Tables']['activity_logs']['Row'];
+export type Notification = Database['public']['Tables']['notifications']['Row'];
 
-export interface User {
-    id: string;
-    email: string;
-    username?: string;
-    created_at: string;
-    updated_at: string;
-}
+// Extracted Enums/Unions
+export type TaskPriority = Task['priority'];
+export type TaskStatus = Task['status'];
+export type CustomFieldType = CustomField['type'];
+export type ProjectStatus = Project['status'];
 
-export interface Organization {
-    id: string;
-    name: string;
-    description: string | null;
-    created_at: string;
-    updated_at: string;
-}
+// Combined types for UI
+export type TaskWithSection = Task & {
+    section_id: string | null;
+    order_index: number | null;
+    labels?: string[]; // Legacy UI compatibility
+    custom_field_values?: Record<string, any>;
+};
 
-export type OrgRole = 'admin' | 'editor' | 'viewer';
+// Form Input Types
+export type TaskInput = Database['public']['Tables']['tasks']['Insert'];
+export type ProjectInput = Database['public']['Tables']['projects']['Insert'];
+export type OrganizationInput = Database['public']['Tables']['organizations']['Insert'];
 
-export interface OrganizationMember {
-    id: string;
-    organization_id: string;
-    user_id: string;
-    role: OrgRole;
-    invited_by: string | null;
-    created_at: string;
-    updated_at: string;
-}
-
-export interface Project {
-    id: string;
-    organization_id: string;
-    name: string;
-    description: string | null;
-    start_date: string | null;
-    end_date: string | null;
-    status: ProjectStatus;
-    type: ProjectType;
-    tasks?: { status: TaskStatus }[];
-    created_at: string;
-    updated_at: string;
-}
-
-export type ProjectStatus = 'active' | 'in_progress' | 'completed' | 'on_hold' | 'archived';
-export type ProjectType = 'kanban' | 'list';
-export type ProjectRole = 'lead' | 'member' | 'viewer';
-
-export interface ProjectMember {
-    id: string;
-    project_id: string;
-    user_id: string;
-    role: ProjectRole;
-    created_at: string;
-    user?: User; // Nested user
-}
-
-export type TaskStatus = 'todo' | 'in_progress' | 'done';
-export type TaskPriority = 'low' | 'medium' | 'high';
-export type TaskType = 'task' | 'bug';
-
-export interface Task {
-    id: string;
-    project_id: string;
-    parent_id: string | null;
-    assignee_id: string | null;
-    title: string;
-    description: string | null;
-    status: TaskStatus;
-    priority: TaskPriority;
-    type: TaskType;
-    labels: string[];
-    due_date: string | null;
-    created_at: string;
-    updated_at: string;
-    completed_at: string | null;
-}
-
+// Time Log Types (not in new schema, but for legacy hooks)
 export interface TimeLog {
     id: string;
     task_id: string;
+    user_id: string;
     start_time: string;
-    end_time: string | null;
-    duration: number | null; // in minutes
-    notes: string | null;
+    end_time?: string;
+    duration: number;
+    note?: string;
     created_at: string;
-}
-
-// ============================================
-// Form/Input Types
-// ============================================
-
-export interface OrganizationInput {
-    name: string;
-    description?: string;
-}
-
-export interface ProjectInput {
-    organization_id: string;
-    name: string;
-    description?: string;
-    start_date?: string;
-    end_date?: string;
-    status?: ProjectStatus;
-    type?: ProjectType;
-}
-
-export interface TaskInput {
-    project_id: string;
-    title: string;
-    description?: string;
-    status?: TaskStatus;
-    priority?: TaskPriority;
-    type?: TaskType;
-    parent_id?: string;
-    assignee_id?: string;
-    labels?: string[];
-    due_date?: string;
 }
 
 export interface TimeLogInput {
@@ -127,51 +48,22 @@ export interface TimeLogInput {
     start_time: string;
     end_time?: string;
     duration?: number;
-    notes?: string;
+    note?: string;
 }
 
-// ============================================
 // Report Types
-// ============================================
-
 export type ReportPeriod = 'day' | 'week' | 'month' | 'year';
 
-export interface ReportFilter {
-    organization_id?: string;
-    project_id?: string;
-    period: ReportPeriod;
-    start_date: string;
-    end_date: string;
-}
-
-export interface ReportSummary {
-    total_tasks: number;
-    completed_tasks: number;
-    in_progress_tasks: number;
-    todo_tasks: number;
-    total_time_minutes: number;
-    tasks_by_project: {
-        project_id: string;
-        project_name: string;
-        task_count: number;
-        completed_count: number;
-        time_minutes: number;
-    }[];
-}
-
-// ============================================
-// UI State Types
-// ============================================
-
-export interface AuthState {
-    user: User | null;
-    isLoading: boolean;
-    isAuthenticated: boolean;
-}
-
-export interface AppNotification {
+// Project Members (legacy, for hooks)
+export interface ProjectMember {
     id: string;
-    type: 'info' | 'success' | 'warning' | 'error';
-    message: string;
-    timestamp: string;
+    project_id: string;
+    user_id: string;
+    role: string;
+    created_at: string;
 }
+
+export type ProjectRole = 'owner' | 'admin' | 'member' | 'viewer';
+
+// Re-export Database for convenience
+export type { Database };

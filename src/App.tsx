@@ -25,6 +25,10 @@ function App() {
               <Route path="/organizations/:orgId/projects" element={<ProjectsPage />} />
               <Route path="/projects" element={<ProjectsPage />} />
               <Route path="/projects/:projectId/tasks" element={<TasksPage />} />
+              <Route path="/projects/:projectId/board" element={<TasksPage />} />
+              <Route path="/projects/:projectId/backlog" element={<TasksPage />} />
+              <Route path="/projects/:projectId/roadmap" element={<TasksPage />} />
+              <Route path="/projects/:projectId/code" element={<TasksPage />} />
               <Route path="/organizations/:orgId/users" element={<UsersPage />} />
               <Route path="/projects" element={<ProjectsPage />} />
               <Route path="/reports" element={<ReportsPage />} />

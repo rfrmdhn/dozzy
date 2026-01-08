@@ -36,7 +36,7 @@ export function useTimeLogs(taskId?: string): UseTimeLogsReturn {
                 .order('start_time', { ascending: false });
 
             if (error) throw error;
-            setTimeLogs(data || []);
+            setTimeLogs((data as TimeLog[]) || []);
             setError(null);
         } catch (err) {
             setError(err as Error);
@@ -73,8 +73,8 @@ export function useTimeLogs(taskId?: string): UseTimeLogsReturn {
                     .single();
 
                 if (error) throw error;
-                setTimeLogs((prev) => [data, ...prev]);
-                return data;
+                setTimeLogs((prev) => [data as TimeLog, ...prev]);
+                return data as TimeLog;
             } catch (err) {
                 setError(err as Error);
                 return null;

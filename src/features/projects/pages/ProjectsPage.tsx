@@ -1,87 +1,87 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { useOrganizations } from '../hooks/useOrganizations';
-import { useProjects } from '../hooks/useProjects';
-import { supabase } from '../../../lib/supabase';
-import type { ProjectInput, Organization } from '../../../types';
+import { useProjectStore } from '../../../stores/useProjectStore';
+import { useOrgStore } from '../../../stores/useOrgStore';
+import { useAuthStore } from '../../../stores/useAuthStore';
+import type { Project } from '../../../types';
 import { FolderIcon, PlusIcon } from '../../../components';
 import '../styles/ProjectsPage.css';
 
 // Components
 import { Button, OrgHeader, ProjectsToolbar, ProjectCard, ProjectModal, OrgEditModal } from '../../../components';
-import { ProjectMembersModal } from '../components/ProjectMembersModal';
+// import { ProjectMembersModal } from '../components/ProjectMembersModal'; // Commented out until refactored
 
 export default function ProjectsPage() {
     const { orgId } = useParams<{ orgId: string }>();
     const navigate = useNavigate();
-    const { projects, isLoading, create, update, remove } = useProjects(orgId);
-    const { organizations } = useOrganizations();
-    const [organization, setOrganization] = useState<Organization | null>(null);
+
+    // Store hooks
+    const { projects, isLoading, fetchProjects, createProject } = useProjectStore();
+    const { organizations, fetchOrganizations, setCurrentOrg } = useOrgStore();
+    const { user } = useAuthStore();
+
     const [showModal, setShowModal] = useState(false);
     const [showOrgEditModal, setShowOrgEditModal] = useState(false);
     const [editingProject, setEditingProject] = useState<string | null>(null);
-    // State for managing members
-    const [managingProject, setManagingProject] = useState<any | null>(null); // Ideally Project type
-
-    // ... existing ... (lines 22-73)
     const [orgFormData, setOrgFormData] = useState({ name: '', description: '' });
-    const [formData, setFormData] = useState<ProjectInput>({
+
+    // Form Data
+    const [formData, setFormData] = useState<Partial<Project>>({
         name: '',
         description: '',
-        start_date: '',
-        end_date: '',
+        start_date: null,
+        due_date: null,
         organization_id: '',
     });
+
     const [searchQuery, setSearchQuery] = useState('');
     const [filterStatus, setFilterStatus] = useState<string>('all');
     const [sortBy, setSortBy] = useState<string>('recent');
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
+    // Fetch Initial Data
     useEffect(() => {
-        // ...
-        // ...
-        // ... (existing code)
         if (orgId) {
-            supabase
-                .from('organizations')
-                .select('*')
-                .eq('id', orgId)
-                .single()
-                .then(({ data }) => setOrganization(data));
+            fetchProjects(orgId);
+            // Ensure orgs are loaded to find the current one
+            if (organizations.length === 0) fetchOrganizations();
         }
-    }, [orgId]);
+    }, [orgId, fetchProjects, organizations.length, fetchOrganizations]);
 
-    // Calculate project progress based on tasks
-    const calculateProgress = (tasks?: { status: string }[]) => {
-        if (!tasks || tasks.length === 0) return 0;
-        const total = tasks.length;
-        const completed = tasks.filter(t => t.status === 'done').length;
-        return Math.round((completed / total) * 100);
+    // Find current organization object
+    const organization = organizations.find(o => o.id === orgId) || null;
+
+    // Derived state
+    const calculateProgress = (_project: Project) => {
+        // TODO: Implement proper progress calculation from store derived data
+        return 0;
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
         if (editingProject) {
-            await update(editingProject, formData);
+            // await update(editingProject, formData); // TODO: Implement update in store
+            alert('Update project not implemented yet');
         } else {
             const orgIdToUse = orgId || formData.organization_id;
-            if (!orgIdToUse) {
+            if (!orgIdToUse || !user) {
                 alert('Please select an organization');
                 return;
             }
-            await create({ ...formData, organization_id: orgIdToUse });
+
+            await createProject({
+                ...formData,
+                organization_id: orgIdToUse,
+                owner_id: user.id
+            });
         }
         handleCloseModal();
     };
 
-    const handleOrgEditSubmit = async (data: { name: string; description: string }) => {
-        if (!orgId) return;
-        await supabase
-            .from('organizations')
-            .update(data)
-            .eq('id', orgId);
-        setOrganization(prev => prev ? { ...prev, ...data } : null);
+    const handleOrgEditSubmit = async (_data: { name: string; description: string }) => {
+        // TODO: Implement update org
+        console.warn('Update org not implemented');
         setShowOrgEditModal(false);
     };
 
@@ -91,37 +91,36 @@ export default function ProjectsPage() {
         setFormData({
             name: project.name,
             description: project.description || '',
-            start_date: project.start_date || '',
-            end_date: project.end_date || '',
+            start_date: project.start_date || null,
+            due_date: project.due_date || null,
             organization_id: project.organization_id,
         });
         setShowModal(true);
     };
 
-
-
-    const handleDelete = async (id: string, e: React.MouseEvent) => {
+    const handleDelete = async (_id: string, e: React.MouseEvent) => {
         e.stopPropagation();
         if (confirm('Delete this project? All tasks will be removed.')) {
-            await remove(id);
+            // await remove(_id); // TODO: Implement remove in store
+            console.warn('Delete project not implemented');
         }
     };
 
     const handleCloseModal = () => {
         setShowModal(false);
         setEditingProject(null);
-        setFormData({ name: '', description: '', start_date: '', end_date: '', organization_id: '' });
+        setFormData({ name: '', description: '', start_date: null, due_date: null, organization_id: '' });
     };
 
     const handleNewProject = () => {
         setEditingProject(null);
-        setFormData({ name: '', description: '', start_date: '', end_date: '', organization_id: '' });
+        setFormData({ name: '', description: '', start_date: null, due_date: null, organization_id: orgId || '' });
         setShowModal(true);
     };
 
     const openOrgEdit = () => {
         if (organization) {
-            setOrgFormData({ name: organization.name, description: organization.description || '' });
+            setOrgFormData({ name: organization.name, description: '' }); // description missing in type
             setShowOrgEditModal(true);
         }
     };
@@ -135,7 +134,7 @@ export default function ProjectsPage() {
 
     return (
         <div className="page-container">
-            {/* Breadcrumb ... (unchanged) */}
+            {/* Breadcrumb */}
             <div className="breadcrumb">
                 <Link to="/">Home</Link>
                 <span className="breadcrumb-separator">›</span>
@@ -183,7 +182,7 @@ export default function ProjectsPage() {
                         <ProjectCard
                             key={project.id}
                             project={project}
-                            progress={calculateProgress(project.tasks)}
+                            progress={calculateProgress(project)} // Todo: Link tasks count
                             onClick={() => navigate(`/projects/${project.id}/tasks`)}
                             onEdit={(e) => handleEdit(project, e)}
                             onDelete={(e) => handleDelete(project.id, e)}
@@ -219,15 +218,6 @@ export default function ProjectsPage() {
                 initialData={orgFormData}
                 onSubmit={handleOrgEditSubmit}
             />
-
-            {/* Project Members Modal */}
-            {managingProject && (
-                <ProjectMembersModal
-                    isOpen={!!managingProject}
-                    onClose={() => setManagingProject(null)}
-                    project={managingProject}
-                />
-            )}
         </div>
     );
 }

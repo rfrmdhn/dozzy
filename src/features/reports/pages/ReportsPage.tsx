@@ -2,13 +2,14 @@ import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../../contexts/AuthContext';
 import { formatDuration } from '../../tasks/hooks/useTimeLogs';
-import type { Organization, Project, Task, ReportPeriod } from '../../../types';
+import type { Organization, Project, TaskWithSection, ReportPeriod } from '../../../types';
 import { ClipboardListIcon, CheckCircleIcon, RefreshIcon, TimerIcon, ChartBarIcon, FolderIcon, Button, Card, Select } from '../../../components';
 import '../styles/ReportsPage.css';
 
 interface ReportData {
-    tasks: Task[];
+    tasks: TaskWithSection[];
     timeLogs: { task_id: string; duration: number }[];
+    taskProjectMap: Record<string, string>; // taskId -> projectId
 }
 
 const PERIOD_OPTIONS = [
@@ -31,11 +32,13 @@ export default function ReportsPage() {
     useEffect(() => {
         if (user) {
             supabase
-                .from('organizations')
-                .select('*')
+                .from('organization_members')
+                .select('organization_id, organizations(*)')
                 .eq('user_id', user.id)
-                .order('name')
-                .then(({ data }) => setOrganizations(data || []));
+                .then(({ data }) => {
+                    const orgs = data?.map((d: any) => d.organizations).filter(Boolean) || [];
+                    setOrganizations(orgs);
+                });
         }
     }, [user]);
 
@@ -94,18 +97,38 @@ export default function ReportsPage() {
             }
 
             if (projectIds.length === 0) {
-                setReportData({ tasks: [], timeLogs: [] });
+                setReportData({ tasks: [], timeLogs: [], taskProjectMap: {} });
                 return;
             }
 
-            const { data: tasks } = await supabase
-                .from('tasks')
-                .select('*')
-                .in('project_id', projectIds)
-                .gte('created_at', start.toISOString())
-                .lte('created_at', end.toISOString());
+            // Fetch tasks via project_tasks junction
+            const { data: projectTasks } = await supabase
+                .from('project_tasks')
+                .select(`
+                    project_id,
+                    section_id,
+                    order_index,
+                    task:tasks (*)
+                `)
+                .in('project_id', projectIds);
 
-            const taskIds = tasks?.map((t) => t.id) || [];
+            // Build task list and mapping
+            const taskProjectMap: Record<string, string> = {};
+            const tasks: TaskWithSection[] = (projectTasks || [])
+                .filter((pt: any) => {
+                    const createdAt = new Date(pt.task?.created_at);
+                    return createdAt >= start && createdAt <= end;
+                })
+                .map((pt: any) => {
+                    taskProjectMap[pt.task.id] = pt.project_id;
+                    return {
+                        ...pt.task,
+                        section_id: pt.section_id,
+                        order_index: pt.order_index
+                    };
+                });
+
+            const taskIds = tasks.map((t) => t.id);
             let timeLogs: { task_id: string; duration: number }[] = [];
 
             if (taskIds.length > 0) {
@@ -118,7 +141,7 @@ export default function ReportsPage() {
                 timeLogs = logs || [];
             }
 
-            setReportData({ tasks: tasks || [], timeLogs });
+            setReportData({ tasks, timeLogs, taskProjectMap });
         } catch (err) {
             console.error('Report generation failed:', err);
         } finally {
@@ -129,7 +152,7 @@ export default function ReportsPage() {
     const summary = useMemo(() => {
         if (!reportData) return null;
 
-        const { tasks, timeLogs } = reportData;
+        const { tasks, timeLogs, taskProjectMap } = reportData;
         const total = tasks.length;
         const done = tasks.filter((t) => t.status === 'done').length;
         const inProgress = tasks.filter((t) => t.status === 'in_progress').length;
@@ -138,16 +161,21 @@ export default function ReportsPage() {
 
         const byProject: Record<string, { total: number; done: number; time: number }> = {};
         for (const task of tasks) {
-            if (!byProject[task.project_id]) {
-                byProject[task.project_id] = { total: 0, done: 0, time: 0 };
+            const projectId = taskProjectMap[task.id];
+            if (!projectId) continue;
+            if (!byProject[projectId]) {
+                byProject[projectId] = { total: 0, done: 0, time: 0 };
             }
-            byProject[task.project_id].total++;
-            if (task.status === 'done') byProject[task.project_id].done++;
+            byProject[projectId].total++;
+            if (task.status === 'done') byProject[projectId].done++;
         }
         for (const log of timeLogs) {
             const task = tasks.find((t) => t.id === log.task_id);
-            if (task && byProject[task.project_id]) {
-                byProject[task.project_id].time += log.duration || 0;
+            if (task) {
+                const projectId = taskProjectMap[task.id];
+                if (projectId && byProject[projectId]) {
+                    byProject[projectId].time += log.duration || 0;
+                }
             }
         }
 

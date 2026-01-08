@@ -1,20 +1,24 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../../lib/supabase';
-import type { Task, TaskInput, TaskStatus } from '../../../types';
+import type { TaskInput, TaskWithSection } from '../../../types';
 
 interface UseTasksReturn {
-    tasks: Task[];
+    tasks: TaskWithSection[];
     isLoading: boolean;
     error: Error | null;
-    create: (input: TaskInput) => Promise<Task | null>;
+    create: (input: TaskInput) => Promise<TaskWithSection | null>;
     update: (id: string, input: Partial<TaskInput>) => Promise<boolean>;
-    updateStatus: (id: string, status: TaskStatus) => Promise<boolean>;
+    updateStatus: (id: string, status: string) => Promise<boolean>;
     remove: (id: string) => Promise<boolean>;
     refresh: () => Promise<void>;
 }
 
+/**
+ * Legacy hook for task management - prefer useTaskStore for new code
+ * @deprecated Use useTaskStore instead
+ */
 export function useTasks(projectId?: string): UseTasksReturn {
-    const [tasks, setTasks] = useState<Task[]>([]);
+    const [tasks, setTasks] = useState<TaskWithSection[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
 
@@ -27,14 +31,25 @@ export function useTasks(projectId?: string): UseTasksReturn {
 
         try {
             setIsLoading(true);
+            // Use project_tasks junction table
             const { data, error } = await supabase
-                .from('tasks')
-                .select('*')
-                .eq('project_id', projectId)
-                .order('created_at', { ascending: false });
+                .from('project_tasks')
+                .select(`
+                    section_id,
+                    order_index,
+                    task:tasks (*)
+                `)
+                .eq('project_id', projectId);
 
             if (error) throw error;
-            setTasks(data || []);
+
+            const formattedTasks: TaskWithSection[] = (data || []).map((item: any) => ({
+                ...item.task,
+                section_id: item.section_id,
+                order_index: item.order_index
+            }));
+
+            setTasks(formattedTasks);
             setError(null);
         } catch (err) {
             setError(err as Error);
@@ -48,7 +63,7 @@ export function useTasks(projectId?: string): UseTasksReturn {
         fetchTasks();
     }, [fetchTasks]);
 
-    const create = useCallback(async (input: TaskInput): Promise<Task | null> => {
+    const create = useCallback(async (input: TaskInput): Promise<TaskWithSection | null> => {
         try {
             const { data, error } = await supabase
                 .from('tasks')
@@ -56,14 +71,16 @@ export function useTasks(projectId?: string): UseTasksReturn {
                     ...input,
                     status: input.status || 'todo',
                     priority: input.priority || 'medium',
-                    labels: input.labels || [],
+                    tags: input.tags || [],
                 })
                 .select()
                 .single();
 
             if (error) throw error;
-            setTasks((prev) => [data, ...prev]);
-            return data;
+
+            const newTask: TaskWithSection = { ...data, section_id: null, order_index: null };
+            setTasks((prev) => [newTask, ...prev]);
+            return newTask;
         } catch (err) {
             setError(err as Error);
             return null;
@@ -92,9 +109,9 @@ export function useTasks(projectId?: string): UseTasksReturn {
     );
 
     const updateStatus = useCallback(
-        async (id: string, status: TaskStatus): Promise<boolean> => {
+        async (id: string, status: string): Promise<boolean> => {
             try {
-                const updateData: Partial<Task> = {
+                const updateData: Record<string, any> = {
                     status,
                     updated_at: new Date().toISOString(),
                 };

@@ -15,19 +15,37 @@ import {
     PlusIcon,
     UsersIcon
 } from '../atoms/icons';
-import { useOrganizations } from '../../features/projects/hooks/useOrganizations';
-import { useProjects } from '../../features/projects/hooks/useProjects';
+import { useOrgStore } from '../../stores/useOrgStore';
+import { useProjectStore } from '../../stores/useProjectStore';
+import { useUIStore } from '../../stores/useUIStore';
 import { OrganizationModal } from '../organisms';
 import './styles/Sidebar.css';
 
 export default function Sidebar() {
     const { projectId } = useParams();
-    const { organizations } = useOrganizations();
-    const { projects } = useProjects();
+    const { organizations, fetchOrganizations } = useOrgStore();
+    const { projects, fetchProjects } = useProjectStore();
+    const { isSidebarOpen } = useUIStore(); // Optionally utilize sidebar toggle state
 
     // State for expanded items (both orgs and projects)
     const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
     const [isOrgModalOpen, setIsOrgModalOpen] = useState(false);
+
+    // Initial fetch
+    useEffect(() => {
+        fetchOrganizations();
+    }, [fetchOrganizations]);
+
+    // Fetch projects when organizations are loaded
+    useEffect(() => {
+        if (organizations.length > 0) {
+            // Fetch for all orgs (or optimize to fetch only for expanded/current)
+            // For now, simpler to loop or relying on user interaction to expand?
+            // Existing logic seemed to assume all projects are available.
+            // Let's iterate and fetch for each org for now
+            organizations.forEach(org => fetchProjects(org.id));
+        }
+    }, [organizations, fetchProjects]);
 
     // Auto-expand based on active project
     useEffect(() => {
@@ -36,7 +54,7 @@ export default function Sidebar() {
             if (project && project.organization_id) {
                 setExpandedItems(prev => ({
                     ...prev,
-                    [project.organization_id]: true, // Expand Org
+                    [project.organization_id!]: true, // Expand Org
                     [projectId]: true // Expand Project
                 }));
             }
@@ -51,6 +69,8 @@ export default function Sidebar() {
             [id]: !prev[id]
         }));
     };
+
+    if (!isSidebarOpen) return null; // Or return collapsed view
 
     return (
         <aside className="sidebar">

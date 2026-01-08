@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Button } from '../atoms';
 import { Modal, Input } from '../molecules';
-import { useOrganizations } from '../../features/projects/hooks/useOrganizations';
+import { useOrgStore } from '../../stores/useOrgStore';
+import { useAuthStore } from '../../stores/useAuthStore';
 
 interface OrganizationModalProps {
     isOpen: boolean;
@@ -11,7 +12,8 @@ interface OrganizationModalProps {
 }
 
 export function OrganizationModal({ isOpen, onClose, organization, onSuccess }: OrganizationModalProps) {
-    const { create, update } = useOrganizations();
+    const { createOrganization } = useOrgStore();
+    const { user } = useAuthStore();
     const [formData, setFormData] = useState({ name: '', description: '' });
     const [isLoading, setIsLoading] = useState(false);
 
@@ -24,14 +26,15 @@ export function OrganizationModal({ isOpen, onClose, organization, onSuccess }: 
     }, [organization, isOpen]);
 
     const handleSubmit = async () => {
-        if (!formData.name.trim()) return;
+        if (!formData.name.trim() || !user) return;
 
         setIsLoading(true);
         try {
             if (organization) {
-                await update(organization.id, formData);
+                // await update(organization.id, formData); // TODO: Implement update in store
+                console.warn('Update org not implemented in store yet');
             } else {
-                await create(formData);
+                await createOrganization(formData.name, user.id);
             }
             if (onSuccess) onSuccess();
             onClose();

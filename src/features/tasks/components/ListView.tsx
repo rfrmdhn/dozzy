@@ -1,16 +1,16 @@
-import { type Task, type TaskStatus, type TaskPriority } from '../../../types';
+import type { TaskWithSection, TaskPriority } from '../../../types';
 import { CalendarIcon, ClockIcon, EditIcon, TrashIcon, FlagIcon, Button, Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../../components';
 
 interface ListViewProps {
-    tasks: Task[];
-    onUpdateStatus: (id: string, status: TaskStatus) => void;
-    onEdit: (task: Task) => void;
+    tasks: TaskWithSection[];
+    onUpdateStatus: (id: string, status: string | null) => void;
+    onEdit: (task: TaskWithSection) => void;
     onDelete: (id: string) => void;
-    onLogTime: (task: Task) => void;
+    onLogTime: (task: TaskWithSection) => void;
 }
 
 export function ListView({ tasks, onUpdateStatus, onEdit, onDelete, onLogTime }: ListViewProps) {
-    const getStatusBadgeClass = (status: TaskStatus) => {
+    const getStatusBadgeClass = (status: string | null) => {
         switch (status) {
             case 'todo': return 'badge-todo';
             case 'in_progress': return 'badge-in-progress';
@@ -23,9 +23,11 @@ export function ListView({ tasks, onUpdateStatus, onEdit, onDelete, onLogTime }:
         const colors: Record<string, string> = {
             high: 'var(--color-error)',
             medium: 'var(--color-warning)',
-            low: 'var(--color-success)'
+            low: 'var(--color-success)',
+            urgent: 'var(--color-error)'
         };
-        return <FlagIcon size={14} style={{ color: colors[priority] || 'var(--color-gray-400)' }} />;
+        const colorKey = priority || 'medium';
+        return <FlagIcon size={14} style={{ color: colors[colorKey] || 'var(--color-gray-400)' }} />;
     };
 
     return (
@@ -36,7 +38,7 @@ export function ListView({ tasks, onUpdateStatus, onEdit, onDelete, onLogTime }:
                     <TableHead>Task Name</TableHead>
                     <TableHead style={{ width: '120px' }}>Status</TableHead>
                     <TableHead style={{ width: '100px' }}>Priority</TableHead>
-                    <TableHead style={{ width: '120px' }}>Labels</TableHead>
+                    <TableHead style={{ width: '120px' }}>Tags</TableHead>
                     <TableHead style={{ width: '140px' }}>Due Date</TableHead>
                     <TableHead style={{ width: '80px' }}></TableHead>
                 </TableRow>
@@ -74,8 +76,8 @@ export function ListView({ tasks, onUpdateStatus, onEdit, onDelete, onLogTime }:
                             </span>
                         </TableCell>
                         <TableCell>
-                            {task.labels?.slice(0, 2).map((label, i) => (
-                                <span key={i} className="label-badge">#{label}</span>
+                            {task.tags?.slice(0, 2).map((tag: string, i: number) => (
+                                <span key={i} className="label-badge">#{tag}</span>
                             ))}
                         </TableCell>
                         <TableCell>

@@ -1,16 +1,16 @@
 import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-pangea/dnd';
-import { type Task, type TaskStatus, type TaskPriority } from '../../../types';
+import type { TaskWithSection, TaskPriority } from '../../../types';
 import { CalendarIcon, ClockIcon, FlagIcon, Button, Card } from '../../../components';
 import '../styles/BoardView.css';
 
 interface BoardViewProps {
-    tasks: Task[];
-    onUpdateStatus: (id: string, status: TaskStatus) => void;
-    onEdit: (task: Task) => void;
-    onLogTime: (task: Task) => void;
+    tasks: TaskWithSection[];
+    onUpdateStatus: (id: string, status: string | null) => void;
+    onEdit: (task: TaskWithSection) => void;
+    onLogTime: (task: TaskWithSection) => void;
 }
 
-const COLUMNS: { id: TaskStatus; title: string }[] = [
+const COLUMNS: { id: string; title: string }[] = [
     { id: 'todo', title: 'To Do' },
     { id: 'in_progress', title: 'In Progress' },
     { id: 'done', title: 'Done' },
@@ -29,7 +29,7 @@ export function BoardView({ tasks, onUpdateStatus, onEdit, onLogTime }: BoardVie
             return;
         }
 
-        const newStatus = destination.droppableId as TaskStatus;
+        const newStatus = destination.droppableId;
         onUpdateStatus(draggableId, newStatus);
     };
 
@@ -76,9 +76,9 @@ export function BoardView({ tasks, onUpdateStatus, onEdit, onLogTime }: BoardVie
                                                         >
                                                             <div className="card-header">
                                                                 <div className="card-labels">
-                                                                    {task.labels?.map((label, i) => (
+                                                                    {task.tags?.map((tag: string, i: number) => (
                                                                         <span key={i} className="card-label">
-                                                                            {label}
+                                                                            {tag}
                                                                         </span>
                                                                     ))}
                                                                 </div>

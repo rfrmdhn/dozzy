@@ -22,7 +22,7 @@ export function TimeLogModal({ task, onClose }: TimeLogModalProps) {
             task_id: task.id,
             start_time: new Date(startTime).toISOString(),
             end_time: new Date(endTime).toISOString(),
-            notes: notes || undefined,
+            note: notes || undefined,
         });
 
         setStartTime('');
@@ -89,7 +89,7 @@ export function TimeLogModal({ task, onClose }: TimeLogModalProps) {
                                         {new Date(log.start_time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                                         {log.end_time && ` - ${new Date(log.end_time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`}
                                     </td>
-                                    <td>{log.notes || '-'}</td>
+                                    <td>{log.note || '-'}</td>
                                     <td>{formatDuration(log.duration || 0)}</td>
                                     <td>
                                         <Button
