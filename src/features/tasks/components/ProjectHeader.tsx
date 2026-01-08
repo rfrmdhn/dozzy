@@ -1,9 +1,10 @@
 import { Link } from 'react-router-dom';
 import type { Project } from '../../../types';
+import type { ProjectWithOrg } from '../../../lib/repositories';
 import { BuildingIcon, EditIcon, ShareIcon, Button } from '../../../components';
 
 interface ProjectHeaderProps {
-    project: Project | null;
+    project: ProjectWithOrg | null;
     onEditDetails: () => void;
     onShare: () => void;
     progress: number;
@@ -14,8 +15,11 @@ export function ProjectHeader({ project, onEditDetails, onShare, progress }: Pro
         <>
             {/* Breadcrumb */}
             <div className="breadcrumb">
-                <BuildingIcon size={16} />
-                <Link to="/">Organization</Link>
+                <Link to="/" className="text-gray-500 hover:text-gray-700">Home</Link>
+                <span className="breadcrumb-separator">/</span>
+                <Link to={`/organizations/${project?.organization_id}/projects`} className="text-gray-500 hover:text-gray-700">
+                    {project?.organization?.name || 'Organization'}
+                </Link>
                 <span className="breadcrumb-separator">/</span>
                 <span className="breadcrumb-current">{project?.name || 'Project'}</span>
             </div>

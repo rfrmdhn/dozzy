@@ -54,7 +54,7 @@ export default function UsersPage() {
     if (!orgId) return null;
 
     return (
-        <div className="h-full flex flex-col space-y-6 p-8 overflow-hidden bg-gray-50/50">
+        <div className="page-container h-full flex flex-col space-y-6 overflow-hidden bg-gray-50/50">
             {/* Header */}
             <div className="flex justify-between items-start">
                 <div>

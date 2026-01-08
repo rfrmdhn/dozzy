@@ -22,55 +22,50 @@ import { OrganizationModal } from '../organisms';
 import './styles/Sidebar.css';
 
 export default function Sidebar() {
-    const { projectId } = useParams();
+    const { projectId, orgId } = useParams(); // Get orgId from params as well
     const { organizations, fetchOrganizations } = useOrgStore();
-    const { isSidebarOpen } = useUIStore(); // Optionally utilize sidebar toggle state
+    const { isSidebarOpen } = useUIStore();
 
-    // Local state for sidebar data to avoid conflicting with global active project list
+    // Local state 
     const [sidebarProjects, setSidebarProjects] = useState<Record<string, ProjectWithOrg[]>>({});
     const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
     const [isOrgModalOpen, setIsOrgModalOpen] = useState(false);
     const [loadingOrgs, setLoadingOrgs] = useState<Record<string, boolean>>({});
 
-    // Initial fetch of organizations
     useEffect(() => {
         fetchOrganizations();
     }, [fetchOrganizations]);
 
-    // Auto-expand based on active project params or other logic could go here
-    // But since we don't know the org of the active project until we fetch it, 
-    // we might need to rely on the active project store for *initial* expansion if we wanted that.
-    // For now, consistent with lazy loading, we start collapsed or user manually expands.
+    // Helper to fetch projects for an org
+    const loadProjects = async (organizationId: string) => {
+        if (sidebarProjects[organizationId]) return; // Already loaded
 
-    const handleToggleExpand = async (orgId: string, e: React.MouseEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
+        setLoadingOrgs(prev => ({ ...prev, [organizationId]: true }));
+        const { projects, error } = await projectRepository.fetchByOrg(organizationId);
+        setLoadingOrgs(prev => ({ ...prev, [organizationId]: false }));
 
-        const isExpanding = !expandedItems[orgId];
-
-        setExpandedItems(prev => ({
-            ...prev,
-            [orgId]: isExpanding
-        }));
-
-        // Fetch projects if expanding and not yet loaded
-        if (isExpanding && !sidebarProjects[orgId]) {
-            setLoadingOrgs(prev => ({ ...prev, [orgId]: true }));
-            const { projects, error } = await projectRepository.fetchByOrg(orgId);
-            setLoadingOrgs(prev => ({ ...prev, [orgId]: false }));
-
-            if (!error && projects) {
-                setSidebarProjects(prev => ({
-                    ...prev,
-                    [orgId]: projects as ProjectWithOrg[]
-                }));
-            }
+        if (!error && projects) {
+            setSidebarProjects(prev => ({
+                ...prev,
+                [organizationId]: projects as ProjectWithOrg[]
+            }));
         }
     };
 
-    const toggleProjectExpand = (projId: string, e: React.MouseEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
+    const toggleOrgExpand = async (organizationId: string) => {
+        const isExpanding = !expandedItems[organizationId];
+
+        setExpandedItems(prev => ({
+            ...prev,
+            [organizationId]: isExpanding
+        }));
+
+        if (isExpanding) {
+            await loadProjects(organizationId);
+        }
+    };
+
+    const toggleProjectExpand = (projId: string) => {
         setExpandedItems(prev => ({
             ...prev,
             [projId]: !prev[projId]
@@ -111,19 +106,36 @@ export default function Sidebar() {
                         const orgProjects = sidebarProjects[org.id] || [];
                         const isExpanded = expandedItems[org.id];
                         const isLoading = loadingOrgs[org.id];
+                        // Active if current param matches orgId
+                        const isActive = orgId === org.id;
 
                         return (
                             <div key={org.id} className="nav-tree-item">
-                                <div
-                                    className="nav-item level-1 expandable"
-                                    onClick={(e) => handleToggleExpand(org.id, e)}
+                                {/* Organization Item */}
+                                <NavLink
+                                    to={`/organizations/${org.id}/projects`}
+                                    className={`nav-item level-1 expandable ${isActive ? 'active' : ''}`}
+                                    onClick={(e) => {
+                                        // If clicking the link, ensure it's expanded
+                                        if (!isExpanded) {
+                                            toggleOrgExpand(org.id);
+                                        }
+                                    }}
                                 >
-                                    <div className="nav-item-icon">
+                                    {/* Toggle Icon Block */}
+                                    <div
+                                        className="nav-item-icon"
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            toggleOrgExpand(org.id);
+                                        }}
+                                    >
                                         {isExpanded ? <ChevronDownIcon size={14} /> : <ChevronRightIcon size={14} />}
                                     </div>
                                     <BuildingIcon size={16} />
                                     <span className="truncate">{org.name}</span>
-                                </div>
+                                </NavLink>
 
                                 {isExpanded && (
                                     <div className="nav-children">
@@ -141,27 +153,37 @@ export default function Sidebar() {
                                         ) : (
                                             orgProjects.map(project => {
                                                 const isProjectExpanded = expandedItems[project.id];
-                                                const isActive = projectId === project.id;
+                                                const isProjectActive = projectId === project.id; // Correct param check
 
                                                 return (
                                                     <div key={project.id}>
-                                                        <div
-                                                            className={`nav-item level-2 expandable ${isActive ? 'active-parent' : ''}`}
-                                                            onClick={(e) => toggleProjectExpand(project.id, e)}
+                                                        <NavLink
+                                                            to={`/projects/${project.id}/tasks`}
+                                                            className={`nav-item level-2 expandable ${isProjectActive ? 'active-parent' : ''}`}
+                                                            onClick={(e) => {
+                                                                if (!isProjectExpanded) toggleProjectExpand(project.id);
+                                                            }}
                                                         >
-                                                            <div className="nav-item-icon">
+                                                            <div
+                                                                className="nav-item-icon"
+                                                                onClick={(e) => {
+                                                                    e.preventDefault();
+                                                                    e.stopPropagation();
+                                                                    toggleProjectExpand(project.id);
+                                                                }}
+                                                            >
                                                                 {isProjectExpanded ? <ChevronDownIcon size={14} /> : <ChevronRightIcon size={14} />}
                                                             </div>
                                                             <FolderIcon size={16} />
                                                             <span className="truncate">{project.name}</span>
-                                                        </div>
+                                                        </NavLink>
 
                                                         {isProjectExpanded && (
                                                             <div className="nav-children">
                                                                 <NavLink to={`/projects/${project.id}/tasks`} className="nav-item level-3">
                                                                     <KanbanIcon size={14} /> <span>Tasks</span>
                                                                 </NavLink>
-                                                                {/* Other project views can be added here */}
+                                                                {/* Potential future sub-items: Reports, Settings etc */}
                                                             </div>
                                                         )}
                                                     </div>
