@@ -123,7 +123,7 @@ export function ProjectMembersModal({ isOpen, onClose, project }: ProjectMembers
                                             <div className="text-gray-500 text-xs">{m.user?.email}</div>
                                         </td>
                                         <td className="px-4 py-3">
-                                            <Badge variant={m.role === 'lead' ? 'active' : 'neutral'}>
+                                            <Badge variant={m.role === 'owner' ? 'active' : 'neutral'}>
                                                 {m.role}
                                             </Badge>
                                         </td>

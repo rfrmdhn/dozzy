@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Modal, Input, Select, Button } from '../../../components';
-import { useProjects } from '../../projects/hooks/useProjects';
+import { useProjectStore } from '../../../stores/useProjectStore';
 import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../../contexts/AuthContext';
 import { Check, AlertCircle } from 'lucide-react';
@@ -16,7 +16,7 @@ interface UserModalProps {
 
 export function UserModal({ isOpen, onClose, member, orgId, onSuccess }: UserModalProps) {
     const { user: currentUser } = useAuth();
-    const { projects } = useProjects(orgId);
+    const { projects, fetchProjects } = useProjectStore();
 
     // Form State
     const [email, setEmail] = useState('');
@@ -28,16 +28,18 @@ export function UserModal({ isOpen, onClose, member, orgId, onSuccess }: UserMod
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
+        if (isOpen && orgId) {
+            fetchProjects(orgId);
+        }
+    }, [isOpen, orgId, fetchProjects]);
+
+    useEffect(() => {
         if (isOpen) {
             if (member) {
                 // Edit Mode
                 setEmail(member.user?.email || '');
                 setRole(member.role);
-                setSelectedProjectIds([]); // todo: fetch existing project memberships if needed?
-                // For now, simpler to not show/edit project memberships here, user can manage that in Project Members.
-                // Or maybe we should?
-                // "CRUD User" usually implies Role management. Project management is per-project.
-                // But "Add user to a project" was requested. This implies "On Invite".
+                setSelectedProjectIds([]);
             } else {
                 // Add Mode
                 setEmail('');
@@ -66,10 +68,6 @@ export function UserModal({ isOpen, onClose, member, orgId, onSuccess }: UserMod
                 // CREATE (Invite/Add)
 
                 // 1. Find User by Email
-                // Note: This requires a policy/method to lookup users.
-                // Assuming we can read 'users' table or need a function.
-                // If this fails, we can't proceed without Admin API.
-                // Let's try simple select.
                 const { data: userData, error: userError } = await supabase
                     .from('users')
                     .select('id')
@@ -102,7 +100,7 @@ export function UserModal({ isOpen, onClose, member, orgId, onSuccess }: UserMod
                     const projectMembers = selectedProjectIds.map(pid => ({
                         project_id: pid,
                         user_id: newUserId,
-                        role: 'member' // Default to member? Or let them choose? 'member' is safe.
+                        role: 'member' // Default to member
                     }));
 
                     const { error: projError } = await supabase
@@ -111,8 +109,6 @@ export function UserModal({ isOpen, onClose, member, orgId, onSuccess }: UserMod
 
                     if (projError) {
                         console.error('Failed to add to projects:', projError);
-                        // Don't block success of Org add?
-                        // But user expects it. Let's warn?
                     }
                 }
             }
@@ -164,10 +160,8 @@ export function UserModal({ isOpen, onClose, member, orgId, onSuccess }: UserMod
                     onChange={(e) => setRole(e.target.value as OrgRole)}
                     options={[
                         { value: 'viewer', label: 'Viewer (Read-only)' },
-                        { value: 'member', label: 'Member (Can edit tasks)' }, // Mapping? OrgRole is admin/editor/viewer
-                        // Wait, OrgRole types in useOrganizationMembers are 'admin' | 'editor' | 'viewer'.
-                        // My Select labels should match.
-                        { value: 'editor', label: 'Editor (Can manage projects)' }, // 'member' isn't in OrgRole? Check types.
+                        { value: 'member', label: 'Member (Can edit tasks)' },
+                        { value: 'editor', label: 'Editor (Can manage projects)' },
                         { value: 'admin', label: 'Admin (Full access)' },
                     ]}
                     disabled={isLoading}
@@ -177,7 +171,7 @@ export function UserModal({ isOpen, onClose, member, orgId, onSuccess }: UserMod
                     <div className="space-y-2">
                         <label className="text-sm font-medium text-gray-700">Add to Projects</label>
                         <div className="max-h-48 overflow-y-auto border rounded-md p-2 space-y-1">
-                            {projects.map(project => (
+                            {projects.map((project: { id: string, name: string }) => (
                                 <div
                                     key={project.id}
                                     className={`

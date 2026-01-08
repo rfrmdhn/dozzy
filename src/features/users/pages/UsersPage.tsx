@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useOrganizationMembers } from '../../projects/hooks/useOrganizationMembers';
 import type { OrganizationMember } from '../../projects/hooks/useOrganizationMembers';
@@ -6,12 +6,19 @@ import { UserModal } from '../components/UserModal';
 import { Button, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Badge } from '../../../components';
 import { PlusIcon, Edit2Icon, TrashIcon, UserIcon, UsersIcon } from 'lucide-react';
 import { format } from 'date-fns';
-import { useOrganizations } from '../../projects/hooks/useOrganizations';
+import { useOrgStore } from '../../../stores/useOrgStore';
 
 export default function UsersPage() {
     const { orgId } = useParams<{ orgId: string }>();
     const { members, isLoading, refresh, removeMember, canManageMembers } = useOrganizationMembers(orgId);
-    const { organizations } = useOrganizations();
+    const { organizations, fetchOrganizations } = useOrgStore();
+
+    // Ensure orgs are loaded
+    useEffect(() => {
+        if (organizations.length === 0) {
+            fetchOrganizations();
+        }
+    }, [organizations.length, fetchOrganizations]);
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedMember, setSelectedMember] = useState<OrganizationMember | undefined>(undefined);

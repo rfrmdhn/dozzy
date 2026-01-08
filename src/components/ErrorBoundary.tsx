@@ -1,4 +1,4 @@
-import { Component, ErrorInfo, type ReactNode } from 'react';
+import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { Button } from './atoms';
 
 interface Props {

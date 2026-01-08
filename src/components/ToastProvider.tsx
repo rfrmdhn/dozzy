@@ -1,5 +1,5 @@
-import { useState, useCallback, ReactNode } from 'react';
-import { ToastContext, ToastMessage } from '../contexts/ToastContext';
+import { useState, useCallback, type ReactNode } from 'react';
+import { ToastContext, type ToastMessage } from '../contexts/ToastContext';
 import { ToastContainer } from './atoms/Toast';
 
 interface ToastProviderProps {
